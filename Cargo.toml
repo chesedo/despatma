@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "despatma-lib",
+    "despatma-test-helpers"
+]
