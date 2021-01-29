@@ -16,3 +16,6 @@ tokenstream2-tmpl = "0.1"
 despatma-test-helpers = { path = "../despatma-test-helpers" }
 pretty_assertions = "0.6"
 syn = { version = "1.0", features = ["extra-traits"] }
+
+[features]
+extra-traits = []

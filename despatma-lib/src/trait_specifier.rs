@@ -10,7 +10,7 @@ use tokenstream2_tmpl::{interpolate, Interpolate};
 /// ```text
 /// trait => concrete
 /// ```
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(any(test, feature = "extra-traits"), derive(Eq, PartialEq, Debug))]
 pub struct TraitSpecifier {
     pub abstract_trait: Type,
     pub arrow_token: Token![=>],

@@ -10,7 +10,7 @@ use syn::{Ident, Token};
 /// ```
 ///
 /// The `dyn` keyword is optional.
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(any(test, feature = "extra-traits"), derive(Eq, PartialEq, Debug))]
 pub struct SimpleType {
     pub dyn_token: Option<Token![dyn]>,
     pub ident: Ident,

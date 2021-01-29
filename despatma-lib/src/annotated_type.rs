@@ -11,7 +11,7 @@ use syn::{Token, Type};
 ///
 /// The outer attribute (hash part) is optional.
 /// `SomeType` will be parsed to `T`.
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(any(test, feature = "extra-traits"), derive(Eq, PartialEq, Debug))]
 pub struct AnnotatedType<T = Type> {
     pub attrs: OptionsAttribute,
     pub inner_type: T,

@@ -13,7 +13,7 @@ use syn::{parse_str, Ident, Token};
 /// ```text
 /// key
 /// ```
-#[derive(Debug)]
+#[cfg_attr(any(test, feature = "extra-traits"), derive(Debug))]
 pub struct KeyValue {
     pub key: Ident,
     pub equal_token: Token![=],
@@ -44,13 +44,13 @@ impl Parse for KeyValue {
 }
 
 // Just for testing
-#[cfg(test)]
+#[cfg(any(test, feature = "extra-traits"))]
 impl PartialEq for KeyValue {
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key && format!("{}", self.value) == format!("{}", other.value)
     }
 }
-#[cfg(test)]
+#[cfg(any(test, feature = "extra-traits"))]
 impl Eq for KeyValue {}
 
 #[cfg(test)]

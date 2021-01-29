@@ -11,7 +11,7 @@ use syn::{bracketed, token, Token};
 ///
 /// The value part of an option is optional.
 /// Thus, `bool_key2` will have the value `default`.
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(any(test, feature = "extra-traits"), derive(Eq, PartialEq, Debug))]
 #[derive(Default)]
 pub struct OptionsAttribute {
     pub pound_token: Token![#],

@@ -20,5 +20,6 @@ tokenstream2-tmpl = "0.1"
 
 [dev-dependencies]
 despatma-test-helpers = { path = "../despatma-test-helpers" }
+despatma-lib = { path = "../despatma-lib", features = ["extra-traits"] }
 pretty_assertions = "0.6"
 syn = { version = "1.0", features = ["extra-traits"] }
