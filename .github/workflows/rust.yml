@@ -24,6 +24,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install nightly toolchain
       run: rustup toolchain install nightly
+    - name: Install rustmft on nightly
+      run: rustup component add rustfmt --toolchain nightly
     - name: Install cargo-expand
       run: cargo +nightly install cargo-expand
     - name: Run tests
