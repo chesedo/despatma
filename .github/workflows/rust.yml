@@ -18,5 +18,11 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
+    - name: Install cargo-expand
+      uses: actions-rs/cargo@v1.0.1
+      with:
+        command: install
+        toolchain: nightly
+        args: cargo-expand
     - name: Run tests
       run: cargo test --verbose --tests
