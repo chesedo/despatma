@@ -24,7 +24,6 @@ jobs:
     - name: Install nightly toolchain
       uses: actions-rs/toolchain@v1
       with:
-        profile: minimal
         toolchain: nightly
         override: true
     - name: Install cargo-expand
