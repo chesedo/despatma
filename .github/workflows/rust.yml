@@ -22,15 +22,8 @@ jobs:
 
     steps:
     - name: Install nightly toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        override: true
+      run: rustup toolchain install nightly
     - name: Install cargo-expand
-      uses: actions-rs/cargo@v1.0.1
-      with:
-        command: install
-        toolchain: nightly
-        args: cargo-expand
+      run: cargo +nightly install cargo-expand
     - name: Run tests
       run: cargo test --verbose --tests
