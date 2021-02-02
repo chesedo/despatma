@@ -16,7 +16,10 @@ use syn::{parse_quote, ItemTrait, Token, Type, TypeParamBound};
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct AbstractFactoryAttribute {
     factory_trait: Type,
+
+    #[allow(dead_code)]
     sep: Token![,],
+
     types: Punctuated<Type, Token![,]>,
 }
 

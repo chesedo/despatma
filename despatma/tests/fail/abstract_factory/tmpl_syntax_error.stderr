@@ -1,0 +1,21 @@
+error[E0599]: no function or associated item named `new` found for struct `GnomeButton` in the current scope
+  --> $DIR/tmpl_syntax_error.rs:35:28
+   |
+7  | struct GnomeButton {}
+   | ------------------ function or associated item `new` not found for this
+...
+35 |         Box::new(CONCRETE::new())
+   |                            ^^^ function or associated item not found in `GnomeButton`
+
+error[E0308]: mismatched types
+  --> $DIR/tmpl_syntax_error.rs:40:25
+   |
+40 |     fn create(&self) -> Box<TRAIT> {
+   |        ------           ^^^^^^^^^^ expected struct `std::boxed::Box`, found `()`
+   |        |
+   |        implicitly returns `()` as its body has no tail or `return` expression
+41 |         Box::new(CONCRETE::create());
+   |                                     - help: consider removing this semicolon
+   |
+   = note: expected struct `std::boxed::Box<lib::elements::Window>`
+           found unit type `()`
