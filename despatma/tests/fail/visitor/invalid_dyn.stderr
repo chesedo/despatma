@@ -1,0 +1,19 @@
+error[E0404]: expected trait, found struct `Rectangle`
+ --> $DIR/invalid_dyn.rs:7:26
+  |
+7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
+  |                          ^^^^^^^^^ not a trait
+
+warning: trait objects without an explicit `dyn` are deprecated
+ --> $DIR/invalid_dyn.rs:7:54
+  |
+7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
+  |                                                      ^^^^ help: use `dyn`: `dyn Cube`
+  |
+  = note: `#[warn(bare_trait_objects)]` on by default
+
+warning: trait objects without an explicit `dyn` are deprecated
+ --> $DIR/invalid_dyn.rs:7:54
+  |
+7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
+  |                                                      ^^^^ help: use `dyn`: `dyn Cube`

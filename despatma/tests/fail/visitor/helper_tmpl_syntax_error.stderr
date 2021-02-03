@@ -1,0 +1,11 @@
+error[E0599]: no method named `visit_rectangle` found for mutable reference `&mut V` in the current scope
+  --> $DIR/helper_tmpl_syntax_error.rs:13:30
+   |
+13 |     #[helper_tmpl = {visitor.visit_rectangle(cube.get_back())}]
+   |                              ^^^^^^^^^^^^^^^ method not found in `&mut V`
+
+error[E0599]: no method named `get_back` found for reference `&dyn lib::shapes::Cube` in the current scope
+  --> $DIR/helper_tmpl_syntax_error.rs:13:51
+   |
+13 |     #[helper_tmpl = {visitor.visit_rectangle(cube.get_back())}]
+   |                                                   ^^^^^^^^ method not found in `&dyn lib::shapes::Cube`

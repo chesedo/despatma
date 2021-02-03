@@ -1,0 +1,13 @@
+error: expected identifier
+  --> $DIR/double_options_attr.rs:14:5
+   |
+14 |     #[no_default]
+   |     ^
+
+warning: unused imports: `Circle`, `Cube`, `Rectangle`
+ --> $DIR/double_options_attr.rs:5:19
+  |
+5 | use lib::shapes::{Circle, Cube, Rectangle};
+  |                   ^^^^^^  ^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
