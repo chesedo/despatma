@@ -1,3 +1,14 @@
+//! Library for the [despatma] crate. This library has some extra tokens not defined in [syn] that are used by
+//! [despatma]. These are used as options for design pattern inputs or for type inputs.
+//!
+//! [syn]: https://github.com/dtolnay/syn
+//! [despatma]: https://github.com/chesedo/despatma
+//!
+//! # Optional features
+//! Like [syn], some functionality are behind optional features to optimize compile-time. Currently the follow feature
+//! is available:
+//! - `extra-traits` — Debug, Eq, PartialEq, Hash impls for all syntax tree types.
+
 mod annotated_type;
 pub mod extensions;
 mod key_value;

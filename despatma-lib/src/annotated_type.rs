@@ -3,6 +3,7 @@ use syn::parse::{Parse, ParseStream, Result};
 use syn::{Token, Type};
 
 /// Holds a type that is optionally annotated with key-value options.
+///
 /// An acceptable stream will have the following form:
 /// ```text
 /// #[option1 = value1, option2 = value2]

@@ -4,6 +4,7 @@ use syn::parse::{Parse, ParseStream, Result};
 use syn::{Ident, Token};
 
 /// Holds a simple type that is optionally annotated as `dyn`.
+///
 /// The following is an example of its input stream:
 /// ```text
 /// dyn SomeType

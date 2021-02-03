@@ -4,6 +4,7 @@ use syn::punctuated::Punctuated;
 use syn::{bracketed, token, Token};
 
 /// Holds an outer attribute filled with key-value options.
+///
 /// Streams in the following form will be parsed successfully:
 /// ```text
 /// #[key1 = value1, bool_key2, key3 = value]
