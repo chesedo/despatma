@@ -29,11 +29,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install latest nightly
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: nightly
-        components: rustfmt
+    - name: Install nightly toolchain
+      run: rustup toolchain install nightly --component rustfmt
     - name: Install cargo-expand
       run: cargo +nightly install cargo-expand
     - name: Run tests
