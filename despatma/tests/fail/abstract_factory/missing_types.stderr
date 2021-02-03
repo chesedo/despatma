@@ -1,5 +1,5 @@
-error[E0433]: failed to resolve: use of undeclared type or module `GnomeButton`
+error[E0433]: failed to resolve: use of undeclared type `GnomeButton`
   --> $DIR/missing_types.rs:21:32
    |
 21 | #[interpolate_traits(Button => GnomeButton)]
-   |                                ^^^^^^^^^^^ use of undeclared type or module `GnomeButton`
+   |                                ^^^^^^^^^^^ use of undeclared type `GnomeButton`

@@ -1,4 +1,4 @@
-error[E0277]: the trait bound `GnomeFactory: Factory<lib::elements::Window>` is not satisfied
+error[E0277]: the trait bound `GnomeFactory: Factory<Window>` is not satisfied
   --> $DIR/missing_interpolation.rs:18:6
    |
 13 | #[abstract_factory(Factory, dyn Button, Window)]
@@ -7,9 +7,9 @@ error[E0277]: the trait bound `GnomeFactory: Factory<lib::elements::Window>` is 
    |           ------------------ required by a bound in this
 ...
 18 | impl AbstractGuiFactory for GnomeFactory {}
-   |      ^^^^^^^^^^^^^^^^^^ the trait `Factory<lib::elements::Window>` is not implemented for `GnomeFactory`
+   |      ^^^^^^^^^^^^^^^^^^ the trait `Factory<Window>` is not implemented for `GnomeFactory`
 
-error[E0277]: the trait bound `GnomeFactory: Factory<(dyn lib::elements::Button + 'static)>` is not satisfied
+error[E0277]: the trait bound `GnomeFactory: Factory<(dyn Button + 'static)>` is not satisfied
   --> $DIR/missing_interpolation.rs:18:6
    |
 13 | #[abstract_factory(Factory, dyn Button, Window)]
@@ -18,4 +18,4 @@ error[E0277]: the trait bound `GnomeFactory: Factory<(dyn lib::elements::Button 
    |           ------------------ required by a bound in this
 ...
 18 | impl AbstractGuiFactory for GnomeFactory {}
-   |      ^^^^^^^^^^^^^^^^^^ the trait `Factory<(dyn lib::elements::Button + 'static)>` is not implemented for `GnomeFactory`
+   |      ^^^^^^^^^^^^^^^^^^ the trait `Factory<(dyn Button + 'static)>` is not implemented for `GnomeFactory`
