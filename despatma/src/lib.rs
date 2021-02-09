@@ -130,6 +130,206 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
     attributes.interpolate(concrete_impl.into()).into()
 }
 
+/// Creates an abstract visitor for a list of elements.
+///
+/// This macro does three things:
+/// 1. A `Visitor` trait is created with methods to visit each element. Each method calls a default helper function by default.
+/// 1. A helper function is created for each element. The idea is for this function to transverse into the elements children.
+/// 1. A `Visitable` trait is created that redirects / reflects each element back to its visitor
+///
+/// # Example input
+/// ```
+/// use despatma::visitor;
+///
+/// visitor!(
+///     dyn Arc,
+///     Rectangle,
+///     dyn Point,
+/// );
+/// ```
+///
+/// ## Output
+/// The three elements listed above will be created.
+/// ```
+/// use despatma::visitor;
+///
+/// pub trait Visitor {
+///     fn visit_arc(&mut self, arc: &dyn Arc) {
+///         visit_arc(self, arc)
+///     }
+///     fn visit_rectangle(&mut self, rectangle: &Rectangle) {
+///         visit_rectangle(self, rectangle)
+///     }
+///     fn visit_point(&mut self, point: &dyn Point) {
+///         visit_point(self, point)
+///     }
+/// }
+///
+/// pub fn visit_arc<V>(visitor: &mut V, _arc: &dyn Arc)
+/// where
+///     V: Visitor + ?Sized,
+/// {
+/// }
+/// pub fn visit_rectangle<V>(visitor: &mut V, _rectangle: &Rectangle)
+/// where
+///     V: Visitor + ?Sized,
+/// {
+/// }
+/// pub fn visit_point<V>(_visitor: &mut V, _point: &dyn Point)
+/// where
+///     V: Visitor + ?Sized,
+/// {
+/// }
+///
+/// trait Visitable {
+///     fn apply(&self, visitor: &mut dyn Visitor);
+/// }
+/// impl Visitable for dyn Arc {
+///     fn apply(&self, visitor: &mut dyn Visitor) {
+///         visitor.visit_arc(self);
+///     }
+/// }
+/// impl Visitable for Rectangle {
+///     fn apply(&self, visitor: &mut dyn Visitor) {
+///         visitor.visit_rectangle(self);
+///     }
+/// }
+/// impl Visitable for dyn Point {
+///     fn apply(&self, visitor: &mut dyn Visitor) {
+///         visitor.visit_point(self);
+///     }
+/// }
+/// ```
+///
+/// The input shows `Visitor` can be applied to structs (`Rectangle`) and traits (`Arc` and `Point`).
+///
+/// ## Usage
+/// Any visitor can now just implement the `Visitor` trait and provide its own implementation for any of the visitor methods.
+/// ```
+/// use my_lib::{Visitor, visit_point};
+///
+/// struct PointCounter {
+///     pub count: usize,
+/// }
+///
+/// impl Visitor for PointCounter {
+///     fn visit_point(&mut self, point: &dyn Point) {
+///         self.count += 1;
+///
+///         // Call helper function to keep transversal intact
+///         visit_point(self, point)
+///     }
+/// }
+/// ```
+///
+/// This visitor will now count all the points in a hierarchy.
+/// But there is a problem. The default helper implementations do not have any transversal code. This can be fixed with the `helper_tmpl` option.
+///
+/// ## `helper_tmpl` option
+/// This option will fill the body of the helper method with the given code.
+/// ```
+/// use despatma::visitor;
+///
+/// visitor!(
+///     #[helper_tmpl = {visitor.visit_point(arc.center);} ]
+///     dyn Arc,
+///
+///     #[
+///         helper_tmpl = {
+///             visitor.visit_point(rectangle.top_left);
+///             visitor.visit_point(rectangle.bottom_right);
+///         },
+///     ]
+///     Rectangle,
+///
+///     dyn Point,
+/// );
+/// ```
+///
+/// The helper functions will now look as follow:
+/// ```
+/// // `Visitor` is same as earlier
+///
+/// pub fn visit_arc<V>(visitor: &mut V, arc: &dyn Arc)
+/// where
+///     V: Visitor + ?Sized,
+/// {
+///     visitor.visit_point(arc.center);
+/// }
+/// pub fn visit_rectangle<V>(visitor: &mut V, rectangle: &Rectangle)
+/// where
+///     V: Visitor + ?Sized,
+/// {
+///     visitor.visit_point(rectangle.top_left);
+///     visitor.visit_point(rectangle.bottom_right);
+/// }
+/// pub fn visit_point<V>(_visitor: &mut V, _point: &dyn Point)
+/// where
+///     V: Visitor + ?Sized,
+/// {
+/// }
+///
+/// // `Visitable` is same as earlier
+/// ```
+///
+/// `PointCounter` will now work as expected!
+///
+/// ## `no_defualt` option
+/// You might want to force visitors to implement a visit method and not have a trait default. The default trait implementation can be removed using the `no_default` option.
+/// ```
+/// use despatma::visitor;
+///
+/// visitor!(
+///     #[
+///         helper_tmpl = {visitor.visit_point(arc.center);},
+///         no_default,
+///     ]
+///     dyn Arc,
+///
+///     #[
+///         helper_tmpl = {
+///             visitor.visit_point(rectangle.top_left);
+///             visitor.visit_point(rectangle.bottom_right);
+///         },
+///     ]
+///     Rectangle,
+///
+///     dyn Point,
+/// );
+/// ```
+///
+/// The `Visitor` trait will now be as follow and `PointCounter` will have to implement the `visit_arc()` method too.
+/// ```
+/// pub trait Visitor {
+///     fn visit_arc(&mut self, arc: &dyn Arc);
+///     fn visit_rectangle(&mut self, rectangle: &Rectangle) {
+///         visit_rectangle(self, rectangle)
+///     }
+///     fn visit_point(&mut self, point: &dyn Point) {
+///         visit_point(self, point)
+///     }
+/// }
+///
+/// // Rest is same as earlier
+/// ```
+///
+/// # Calling a visitor
+/// Suppose the follow code exists
+/// ```
+/// // Create a rectangle with bottom-left point (0, 0) and top-right point (10, 12)
+/// let rect = Rectangle::new(0, 0, 10, 12);
+/// let point_stats = PointCounter{};
+///
+/// // Invoke visitor on hierarchy options
+/// rect.apply(&mut dyn point_stats); // 1 - Preferred
+/// visit_rectangle(&mut point_stats, &rect); // 2
+/// point_stats.visit_rectangle(&dyn rect); // 3
+/// ```
+///
+/// The visitor (`PointCounter`) can be invoked in three ways
+/// 1. This is the preferred way as it will work with any visitor and there is no need to remember the visit method's name.
+/// 1. Needs to know the helper function name and is less generic. But it might work with any visitor.
+/// 1. Least generic and also needs to know the method name.
 #[proc_macro]
 pub fn visitor(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as VisitorFunction);
