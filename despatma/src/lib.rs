@@ -12,6 +12,51 @@ use abstract_factory::AbstractFactoryAttribute;
 use despatma_lib::TraitSpecifier;
 use visitor::VisitorFunction;
 
+/// Turns a `trait` into an Abstract Factory.
+/// The trait can optionally have super-traits.
+///
+/// This macro is generally used with the [macro@self::interpolate_traits] macro.
+///
+/// # Example input
+/// A factory method needs to be defined to use this macro. The factory method is passed as the first argument to the macro. The rest of the arguments passed to the macro are the elements the factory will create.
+/// ```
+/// use despatma::abstract_factory;
+///
+/// // A factory method
+/// // `Element` is a trait defined by you.
+/// pub trait Factory<T: Element + ?Sized> {
+///     fn create(&self, name: String) -> Box<T>;
+/// }
+///
+/// // The abstract factory that also needs to implement `Display` and `Eq`.
+/// // The factory method above (`Factory`) is the first input.
+/// #[abstract_factory(Factory, dyn Button, dyn Scroller, dyn Window)]
+/// pub trait GuiFactory: Display + Eq {}
+/// ```
+///
+/// ## Output
+/// This will create the following code
+/// ```
+/// use despatma::abstract_factory;
+///
+/// // A factory method
+/// // `Element` is a trait defined by you.
+/// pub trait Factory<T: Element + ?Sized> {
+///     fn create(&self, name: String) -> Box<T>;
+/// }
+///
+/// // The abstract factory that also needs to implement `Display` and `Eq`.
+/// // The factory method above (`Factory`) is the first input.
+/// #[abstract_factory(Factory, dyn Button, dyn Scroller, dyn Window)]
+/// pub trait GuiFactory:
+///     Display
+///     + Eq
+///     + Factory<dyn Button>
+///     + Factory<dyn Scroller>
+///     + Factory<dyn Window>
+/// {
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(trait_expr as ItemTrait);
