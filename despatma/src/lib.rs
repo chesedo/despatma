@@ -15,7 +15,9 @@ use visitor::VisitorFunction;
 /// Turns a `trait` into an Abstract Factory.
 /// The trait can optionally have super-traits.
 ///
-/// This macro is generally used with the [macro@self::interpolate_traits] macro.
+/// This macro is generally used with the [interpolate_traits] macro.
+///
+/// [interpolate_traits]: macro@self::interpolate_traits
 ///
 /// # Example input
 /// A factory method needs to be defined to use this macro. The factory method is passed as the first argument to the macro. The rest of the arguments passed to the macro are the elements the factory will create.
@@ -65,6 +67,61 @@ pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenSt
     attributes.expand(&mut input).into()
 }
 
+/// Expands a list of [despatma_lib::TraitSpecifier] elements over a template.
+/// The `TRAIT` and `CONCRETE` markers in the template will be replaced with each passed in element.
+/// The template is annotated with this attribute.
+///
+/// This macro can be used to create concrete implementations for [abstract_factory].
+///
+/// # Example input
+/// ```
+/// use despatma::interpolate_traits;
+///
+/// // GuiFactory and Factory is defined in the abstract_factory example
+/// struct GnomeFactory{}
+/// impl GuiFactory for GnomeFactory{}
+///
+/// // Implement the factory method for each GUI element
+/// #[interpolate_traits(
+///     Button => GnomeButton,
+///     Scroller => Gnome2Scroller,
+///     Window => Gnome3Window,
+/// )]
+/// impl Factory<dyn TRAIT> for GnomeFactory {
+///     fn create(&self, name: String) -> Box<dyn TRAIT> {
+///         Box::new(CONCRETE::new(name))
+///     }
+/// }
+/// ```
+///
+/// ## Output
+/// This will implement the factory method (expand the template) for each element as follow.
+/// ```
+/// use despatma::interpolate_traits;
+///
+/// // GuiFactory and Factory is defined in the abstract_factory example
+/// struct GnomeFactory{}
+/// impl GuiFactory for GnomeFactory{}
+///
+/// // Implement the factory method for each GUI element
+/// impl Factory<dyn Button> for GnomeFactory {
+///     fn create(&self, name: String) -> Box<dyn Button> {
+///         Box::new(GnomeButton::new(name))
+///     }
+/// }
+/// impl Factory<dyn Scroller> for GnomeFactory {
+///     fn create(&self, name: String) -> Box<dyn Scroller> {
+///         Box::new(Gnome2Scroller::new(name))
+///     }
+/// }
+/// impl Factory<dyn Window> for GnomeFactory {
+///     fn create(&self, name: String) -> Box<dyn Window> {
+///         Box::new(Gnome3Window::new(name))
+///     }
+/// }
+/// ```
+///
+/// [abstract_factory]: macro@self::abstract_factory
 #[proc_macro_attribute]
 pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> TokenStream {
     let attributes =
