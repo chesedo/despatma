@@ -6,7 +6,7 @@ edition = "2018"
 description = "Design Pattern Macro like Loki"
 repository = "https://github.com/chesedo/despatma"
 license = "MIT"
-keywords = ["macro", "design patterns"]
+keywords = ["macro", "design", "patterns"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
