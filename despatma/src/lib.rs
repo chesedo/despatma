@@ -1,3 +1,15 @@
+//! Despatma is a collection of `des`ign `pat`tern `ma`cros (`despatma`).
+//! It aims to provide the most common implementations for design patterns at run-time.
+//!
+//! This project is still a **work in progress**.
+//! The end goal is to be as [Loki](http://loki-lib.sourceforge.net/) is for C++ and more if possible.
+//! The following patterns are currently implemented:
+//! - [abstract_factory] - with the help of [interpolate_traits] macro
+//! - [visitor]
+//!
+//! [abstract_factory]: macro@self::abstract_factory
+//! [interpolate_traits]: macro@self::interpolate_traits
+//! [visitor]: macro@self::visitor
 mod abstract_factory;
 mod visitor;
 
