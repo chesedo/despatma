@@ -23,6 +23,6 @@ Next up for investigation is:
 - [ ] Observer
 - [ ] A smarter Visitor
 
-[abstract_factory]: macro@self::abstract_factory
-[interpolate_traits]: macro@self::interpolate_traits
-[visitor]: macro@self::visitor
+[abstract_factory]: https://docs.rs/despatma/0.1.0/despatma/attr.abstract_factory.html
+[interpolate_traits]: https://docs.rs/despatma/0.1.0/despatma/attr.interpolate_traits.html
+[visitor]: https://docs.rs/despatma/0.1.0/despatma/macro.visitor.html
