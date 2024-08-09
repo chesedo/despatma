@@ -7,13 +7,11 @@ pub trait Visitor {
 pub fn visit_button<V>(_visitor: &mut V, _button: &dyn Button)
 where
     V: Visitor + ?Sized,
-{
-}
+{}
 pub fn visit_window<V>(_visitor: &mut V, _window: &Window)
 where
     V: Visitor + ?Sized,
-{
-}
+{}
 trait Visitable {
     fn apply(&self, visitor: &mut dyn Visitor);
 }

@@ -13,7 +13,7 @@ license = "MIT"
 proc-macro2 = "1.0"
 quote = "1.0"
 syn = "1.0"
-tokenstream2-tmpl = "0.1"
+tokenstream2-tmpl = "=0.1.1"
 
 [dev-dependencies]
 despatma-test-helpers = { path = "../despatma-test-helpers" }

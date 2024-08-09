@@ -27,8 +27,7 @@ where
 pub fn visit_point<V>(_visitor: &mut V, _point: &Point)
 where
     V: Visitor + ?Sized,
-{
-}
+{}
 trait Visitable {
     fn apply(&self, visitor: &mut dyn Visitor);
 }

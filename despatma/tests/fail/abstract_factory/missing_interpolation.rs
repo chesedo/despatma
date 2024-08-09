@@ -1,8 +1,8 @@
 /// Test when concrete trait interpolations are missing
-mod lib;
+mod library;
 
 use despatma::abstract_factory;
-use lib::elements::{Button, Element, Window};
+use library::elements::{Button, Element, Window};
 
 // Factory for a single element
 pub trait Factory<T: Element + ?Sized> {

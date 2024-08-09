@@ -1,11 +1,11 @@
 error[E0404]: expected trait, found struct `Window`
-  --> $DIR/invalid_dyn.rs:13:33
+  --> tests/fail/abstract_factory/invalid_dyn.rs:13:33
    |
 13 | #[abstract_factory(Factory, dyn Window)]
    |                                 ^^^^^^ not a trait
 
 error[E0404]: expected trait, found struct `Window`
-  --> $DIR/invalid_dyn.rs:21:22
+  --> tests/fail/abstract_factory/invalid_dyn.rs:21:22
    |
 21 | #[interpolate_traits(Window => Window)]
    |                      ^^^^^^ not a trait

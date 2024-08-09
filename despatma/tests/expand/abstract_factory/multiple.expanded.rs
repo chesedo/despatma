@@ -3,10 +3,9 @@ use despatma::{abstract_factory, interpolate_traits};
 pub trait Builder<T: ElementBuilder> {
     fn create(&self) -> T;
 }
-pub trait AbstractBuilders:
-    Builder<Window> + Builder<Button> + Builder<Scroller> + Builder<CheckBox> + Builder<RadioBox>
-{
-}
+pub trait AbstractBuilders: Builder<
+        Window,
+    > + Builder<Button> + Builder<Scroller> + Builder<CheckBox> + Builder<RadioBox> {}
 struct QtBuilders {}
 impl AbstractBuilders for QtBuilders {}
 impl Builder<Window> for QtBuilders {

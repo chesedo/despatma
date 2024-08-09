@@ -1,8 +1,8 @@
 /// Test when concrete types are missing
-mod lib;
+mod library;
 
 use despatma::{abstract_factory, interpolate_traits};
-use lib::elements::{Button, Element, Window};
+use library::elements::{Button, Element, Window};
 
 // Factory for a single element
 pub trait Factory<T: Element + ?Sized> {

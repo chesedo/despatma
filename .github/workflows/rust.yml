@@ -16,14 +16,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Check format
-      run: cargo fmt --all -- --check
-  build:
+      run: bash scripts.sh cf
+  clippy:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
+    - name: Clippy
+      run: bash scripts.sh cc
   test:
     runs-on: ubuntu-latest
 
@@ -34,4 +34,4 @@ jobs:
     - name: Install cargo-expand
       run: cargo +nightly install cargo-expand
     - name: Run tests
-      run: cargo test --verbose --tests
+      run: bash scripts.sh ct
