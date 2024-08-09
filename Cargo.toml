@@ -5,3 +5,10 @@ members = [
     "despatma-lib",
     "despatma-test-helpers"
 ]
+
+[workspace.dependencies]
+pretty_assertions = "0.6"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "1.0"
+tokenstream2-tmpl = "=0.1.1"
