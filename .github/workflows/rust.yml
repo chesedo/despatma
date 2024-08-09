@@ -29,9 +29,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install nightly toolchain
-      run: rustup toolchain install nightly --component rustfmt
+    - uses: cargo-bins/cargo-binstall@main
     - name: Install cargo-expand
-      run: cargo +nightly install cargo-expand
+      run: cargo binstall -y cargo-expand
     - name: Run tests
       run: bash scripts.sh ct

@@ -34,7 +34,7 @@ pub struct VisitorFunction {
 impl Parse for VisitorFunction {
     fn parse(input: ParseStream) -> Result<Self> {
         Ok(VisitorFunction {
-            types: input.parse_terminated(AnnotatedType::parse)?,
+            types: input.parse_terminated(AnnotatedType::parse, Token![,])?,
         })
     }
 }

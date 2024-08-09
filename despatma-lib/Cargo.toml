@@ -2,7 +2,7 @@
 name = "despatma-lib"
 version = "0.1.0"
 authors = ["chesedo <pieter@chesedo.me>"]
-edition = "2018"
+edition = "2021"
 description = "Common tokens for Despatma"
 repository = "https://github.com/chesedo/despatma/tree/main/despatma-lib"
 license = "MIT"
@@ -10,15 +10,15 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-proc-macro2 = "1.0"
-quote = "1.0"
-syn = "1.0"
-tokenstream2-tmpl = "=0.1.1"
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true }
+tokenstream2-tmpl = { workspace = true }
 
 [dev-dependencies]
 despatma-test-helpers = { path = "../despatma-test-helpers" }
-pretty_assertions = "0.6"
-syn = { version = "1.0", features = ["extra-traits"] }
+pretty_assertions = { workspace = true }
+syn = { workspace = true, features = ["extra-traits"] }
 
 [features]
 extra-traits = []

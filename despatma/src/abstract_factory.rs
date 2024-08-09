@@ -29,7 +29,7 @@ impl Parse for AbstractFactoryAttribute {
         Ok(AbstractFactoryAttribute {
             factory_trait: input.parse()?,
             sep: input.parse()?,
-            types: input.parse_terminated(Type::parse)?,
+            types: input.parse_terminated(Type::parse, Token![,])?,
         })
     }
 }
