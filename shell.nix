@@ -12,6 +12,7 @@ let
   # List of extra tools
   toolList = with pkgs; [
     rust-analyzer
+    cargo-expand
     cargo-watch
     cargo-outdated
   ];
