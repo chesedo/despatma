@@ -35,6 +35,6 @@ jobs:
       with:
         components: rustfmt
     - name: Install cargo-expand
-      run: cargo +nightly binstall cargo-expand
+      run: cargo +nightly binstall -y cargo-expand
     - name: Run tests
       run: bash scripts.sh ct
