@@ -2,7 +2,7 @@
 name = "despatma-lib"
 version = "0.1.0"
 authors = ["chesedo <pieter@chesedo.me>"]
-edition = "2018"
+edition = "2021"
 description = "Common tokens for Despatma"
 repository = "https://github.com/chesedo/despatma/tree/main/despatma-lib"
 license = "MIT"

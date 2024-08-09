@@ -2,7 +2,7 @@
 name = "despatma"
 version = "0.1.0"
 authors = ["chesedo <pieter@chesedo.me>"]
-edition = "2018"
+edition = "2021"
 description = "Design Pattern Macro like Loki"
 repository = "https://github.com/chesedo/despatma"
 license = "MIT"
