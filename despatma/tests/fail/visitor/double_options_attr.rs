@@ -1,8 +1,8 @@
 /// Test using two attributes to provide options
-mod lib;
+mod library;
 
 use despatma::visitor;
-use lib::shapes::{Circle, Cube, Rectangle};
+use library::shapes::{Circle, Cube, Rectangle};
 
 visitor!(
     #[no_default]

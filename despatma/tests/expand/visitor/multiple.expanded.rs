@@ -20,28 +20,23 @@ pub trait Visitor {
 pub fn visit_circle<V>(_visitor: &mut V, _circle: &dyn Circle)
 where
     V: Visitor + ?Sized,
-{
-}
+{}
 pub fn visit_rectangle<V>(_visitor: &mut V, _rectangle: &Rectangle)
 where
     V: Visitor + ?Sized,
-{
-}
+{}
 pub fn visit_sphere<V>(_visitor: &mut V, _sphere: &dyn Sphere)
 where
     V: Visitor + ?Sized,
-{
-}
+{}
 pub fn visit_arc<V>(_visitor: &mut V, _arc: &Arc)
 where
     V: Visitor + ?Sized,
-{
-}
+{}
 pub fn visit_cube<V>(_visitor: &mut V, _cube: &dyn Cube)
 where
     V: Visitor + ?Sized,
-{
-}
+{}
 trait Visitable {
     fn apply(&self, visitor: &mut dyn Visitor);
 }

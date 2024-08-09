@@ -1,5 +1,5 @@
 /// Test when the types are missing
-mod lib;
+mod library;
 
 use despatma::visitor;
 

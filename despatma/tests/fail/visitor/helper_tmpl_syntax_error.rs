@@ -1,8 +1,8 @@
 /// Test a syntax error in the helper_tmpl option
-mod lib;
+mod library;
 
 use despatma::visitor;
-use lib::shapes::{Arc, Circle, Cube};
+use library::shapes::{Arc, Circle, Cube};
 
 visitor!(
     #[no_default]

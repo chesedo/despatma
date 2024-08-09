@@ -1,8 +1,8 @@
 /// Test when `dyn`s are used wrong
-mod lib;
+mod library;
 
 use despatma::visitor;
-use lib::shapes::{Arc, Circle, Cube, Rectangle, Sphere};
+use library::shapes::{Arc, Circle, Cube, Rectangle, Sphere};
 
 visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
 

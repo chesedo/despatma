@@ -40,7 +40,7 @@ use visitor::VisitorFunction;
 ///
 /// # Example input
 /// A factory method needs to be defined to use this macro. The factory method is passed as the first argument to the macro. The rest of the arguments passed to the macro are the elements the factory will create.
-/// ```
+/// ```compile_fail
 /// use despatma::abstract_factory;
 ///
 /// // A factory method
@@ -57,7 +57,7 @@ use visitor::VisitorFunction;
 ///
 /// ## Output
 /// This will create the following code
-/// ```
+/// ```compile_fail
 /// use despatma::abstract_factory;
 ///
 /// // A factory method
@@ -93,7 +93,7 @@ pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenSt
 /// This macro can be used to create concrete implementations for [abstract_factory].
 ///
 /// # Example input
-/// ```
+/// ```compile_fail
 /// use despatma::interpolate_traits;
 ///
 /// // GuiFactory and Factory is defined in the abstract_factory example
@@ -115,7 +115,7 @@ pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenSt
 ///
 /// ## Output
 /// This will implement the factory method (expand the template) for each element as follow.
-/// ```
+/// ```compile_fail
 /// use despatma::interpolate_traits;
 ///
 /// // GuiFactory and Factory is defined in the abstract_factory example
@@ -157,7 +157,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// 1. A `Visitable` trait is created that redirects / reflects each element back to its visitor
 ///
 /// # Example input
-/// ```
+/// ```compile_fail
 /// use despatma::visitor;
 ///
 /// visitor!(
@@ -169,7 +169,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///
 /// ## Output
 /// The three elements listed above will be created.
-/// ```
+/// ```compile_fail
 /// use despatma::visitor;
 ///
 /// pub trait Visitor {
@@ -224,7 +224,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///
 /// ## Usage
 /// Any visitor can now just implement the `Visitor` trait and provide its own implementation for any of the visitor methods.
-/// ```
+/// ```compile_fail
 /// use my_lib::{Visitor, visit_point};
 ///
 /// struct PointCounter {
@@ -246,7 +246,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///
 /// ## `helper_tmpl` option
 /// This option will fill the body of the helper method with the given code.
-/// ```
+/// ```compile_fail
 /// use despatma::visitor;
 ///
 /// visitor!(
@@ -266,7 +266,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// ```
 ///
 /// The helper functions will now look as follow:
-/// ```
+/// ```compile_fail
 /// // `Visitor` is same as earlier
 ///
 /// pub fn visit_arc<V>(visitor: &mut V, arc: &dyn Arc)
@@ -295,7 +295,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///
 /// ## `no_defualt` option
 /// You might want to force visitors to implement a visit method and not have a trait default. The default trait implementation can be removed using the `no_default` option.
-/// ```
+/// ```compile_fail
 /// use despatma::visitor;
 ///
 /// visitor!(
@@ -318,7 +318,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// ```
 ///
 /// The `Visitor` trait will now be as follow and `PointCounter` will have to implement the `visit_arc()` method too.
-/// ```
+/// ```compile_fail
 /// pub trait Visitor {
 ///     fn visit_arc(&mut self, arc: &dyn Arc);
 ///     fn visit_rectangle(&mut self, rectangle: &Rectangle) {
@@ -334,7 +334,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///
 /// # Calling a visitor
 /// Suppose the follow code exists
-/// ```
+/// ```compile_fail
 /// // Create a rectangle with bottom-left point (0, 0) and top-right point (10, 12)
 /// let rect = Rectangle::new(0, 0, 10, 12);
 /// let point_stats = PointCounter{};

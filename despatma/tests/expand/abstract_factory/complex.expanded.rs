@@ -3,16 +3,9 @@ use despatma::{abstract_factory, interpolate_traits};
 pub trait Factory<T: Shape + ?Sized> {
     fn create(&self) -> Box<T>;
 }
-pub trait AbstractFactory:
-    Display
-    + Eq
-    + Factory<dyn Circle>
-    + Factory<dyn Rectangle>
-    + Factory<Arc>
-    + Factory<dyn Sphere>
-    + Factory<dyn Cube>
-{
-}
+pub trait AbstractFactory: Display + Eq + Factory<
+        dyn Circle,
+    > + Factory<dyn Rectangle> + Factory<Arc> + Factory<dyn Sphere> + Factory<dyn Cube> {}
 struct RedFactory {}
 impl AbstractFactory for RedFactory {}
 impl Factory<dyn Circle> for RedFactory {
