@@ -1,6 +1,6 @@
 [package]
 name = "despatma-test-helpers"
-version = "0.1.0"
+version.workspace = true
 authors = ["chesedo <pieter@chesedo.me>"]
 edition = "2021"
 publish = false
