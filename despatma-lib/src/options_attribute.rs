@@ -29,7 +29,7 @@ impl Parse for OptionsAttribute {
         Ok(OptionsAttribute {
             pound_token: input.parse()?,
             bracket_token: bracketed!(content in input), // Use `syn` to extract the stream inside the square bracket group
-            options: content.parse_terminated(KeyValue::parse)?,
+            options: content.parse_terminated(KeyValue::parse, Token![,])?,
         })
     }
 }
