@@ -22,7 +22,7 @@ use syn::{Ident, Token};
 /// Thus, it takes a list of types that will be visited.
 /// A type can be concrete or dynamic.
 ///
-/// Options can also be passed to type:
+/// Options can also be passed to the type:
 /// - `no_default` to turn-off the defualt implementation for the trait method.
 /// - 'helper_tmpl` to be filled into the helper template for traversing a types internal structure.
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -93,7 +93,7 @@ impl VisitorFunction {
             // Make visitable
             visitables.push(quote! {
                 impl Visitable for #elem_type {
-                    fn apply(&self, visitor: &mut dyn Visitor) {
+                    fn apply(&self, visitor: &mut impl Visitor) {
                         visitor.#fn_name(self);
                     }
                 }
@@ -109,7 +109,7 @@ impl VisitorFunction {
             #(#helpers)*
 
             trait Visitable {
-                fn apply(&self, visitor: &mut dyn Visitor);
+                fn apply(&self, visitor: &mut impl Visitor);
             }
             #(#visitables)*
         }
@@ -246,7 +246,7 @@ mod tests {
         });
         input.types.push(parse_quote! {
            #[helper_tmpl = {
-               visitor.visit_button(window.button);
+               visitor.visit_button(&window.button);
            }]
            Window
         });
@@ -273,24 +273,24 @@ mod tests {
             where
                 V: Visitor + ?Sized,
             {
-               visitor.visit_button(window.button);
+               visitor.visit_button(&window.button);
             }
 
             trait Visitable {
-                fn apply(&self, visitor: &mut dyn Visitor);
+                fn apply(&self, visitor: &mut impl Visitor);
             }
             impl Visitable for Button {
-                fn apply(&self, visitor: &mut dyn Visitor) {
+                fn apply(&self, visitor: &mut impl Visitor) {
                     visitor.visit_button(self);
                 }
             }
             impl Visitable for dyn Text {
-                fn apply(&self, visitor: &mut dyn Visitor) {
+                fn apply(&self, visitor: &mut impl Visitor) {
                     visitor.visit_text(self);
                 }
             }
             impl Visitable for Window {
-                fn apply(&self, visitor: &mut dyn Visitor) {
+                fn apply(&self, visitor: &mut impl Visitor) {
                     visitor.visit_window(self);
                 }
             }

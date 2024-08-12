@@ -6,8 +6,8 @@ visitor!(
     dyn Arc,
 
     #[helper_tmpl = {
-        visitor.visit_point(rectangle.top_left);
-        visitor.visit_point(rectangle.bottom_right);
+        visitor.visit_point(&rectangle.top_left);
+        visitor.visit_point(&rectangle.bottom_right);
     }]
     Rectangle,
 

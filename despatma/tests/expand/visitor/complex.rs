@@ -3,7 +3,7 @@ use despatma::visitor;
 
 visitor!(
     #[
-        helper_tmpl = {visitor.visit_point(arc.center);},
+        helper_tmpl = {visitor.visit_point(&arc.center);},
         no_default,
     ]
     dyn Arc,
@@ -11,8 +11,8 @@ visitor!(
     #[
         no_default,
         helper_tmpl = {
-            visitor.visit_point(rectangle.top_left);
-            visitor.visit_point(rectangle.bottom_right);
+            visitor.visit_point(&rectangle.top_left);
+            visitor.visit_point(&rectangle.bottom_right);
         },
     ]
     Rectangle,

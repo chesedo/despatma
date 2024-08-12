@@ -13,15 +13,15 @@ where
     V: Visitor + ?Sized,
 {}
 trait Visitable {
-    fn apply(&self, visitor: &mut dyn Visitor);
+    fn apply(&self, visitor: &mut impl Visitor);
 }
 impl Visitable for dyn Button {
-    fn apply(&self, visitor: &mut dyn Visitor) {
+    fn apply(&self, visitor: &mut impl Visitor) {
         visitor.visit_button(self);
     }
 }
 impl Visitable for Window {
-    fn apply(&self, visitor: &mut dyn Visitor) {
+    fn apply(&self, visitor: &mut impl Visitor) {
         visitor.visit_window(self);
     }
 }

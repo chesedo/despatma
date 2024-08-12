@@ -307,7 +307,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// Creates an abstract visitor for a list of elements.
 ///
 /// This macro does three things:
-/// 1. A `Visitor` trait is created with methods to visit each element. Each method calls a default helper function by default.
+/// 1. A `Visitor` trait is created with methods to visit each element in the list. Each method calls a default helper function by default (see point 2).
 /// 1. A helper function is created for each element. The idea is for this function to traverse into the elements children.
 /// 1. A `Visitable` trait is created that redirects / reflects each element back to its visitor
 ///
@@ -338,7 +338,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// ```
 ///
 /// ## Output
-/// The three elements listed above will be created.
+/// The three sets of things listed earlier will be created.
 /// ```
 /// use despatma::visitor;
 ///
@@ -371,20 +371,20 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// }
 ///
 /// trait Visitable {
-///     fn apply(&self, visitor: &mut dyn Visitor);
+///     fn apply(&self, visitor: &mut impl Visitor);
 /// }
 /// impl Visitable for Arc {
-///     fn apply(&self, visitor: &mut dyn Visitor) {
+///     fn apply(&self, visitor: &mut impl Visitor) {
 ///         visitor.visit_arc(self);
 ///     }
 /// }
 /// impl Visitable for Rectangle {
-///     fn apply(&self, visitor: &mut dyn Visitor) {
+///     fn apply(&self, visitor: &mut impl Visitor) {
 ///         visitor.visit_rectangle(self);
 ///     }
 /// }
 /// impl Visitable for Point {
-///     fn apply(&self, visitor: &mut dyn Visitor) {
+///     fn apply(&self, visitor: &mut impl Visitor) {
 ///         visitor.visit_point(self);
 ///     }
 /// }
@@ -405,7 +405,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// }
 /// ```
 ///
-/// The input shows `Visitor` can be applied to structs (`Rectangle`) and traits (`Arc` and `Point`).
+/// The input shows `Visitor` can be applied to structs, but the macro also supports traits.
 ///
 /// ## Usage
 /// Any visitor can now just implement the `Visitor` trait and provide its own implementation for any of the visitor methods.
@@ -438,6 +438,9 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// }
 ///
 /// impl Visitor for PointCounter {
+///     // Only override the visit_point method
+///     // All other methods will call the default helper function since we don't care about those type.
+///     // But we still need to call the helper function to keep the traversal intact.
 ///     fn visit_point(&mut self, point: &Point) {
 ///         self.count += 1;
 ///

@@ -38,30 +38,30 @@ where
     V: Visitor + ?Sized,
 {}
 trait Visitable {
-    fn apply(&self, visitor: &mut dyn Visitor);
+    fn apply(&self, visitor: &mut impl Visitor);
 }
 impl Visitable for dyn Circle {
-    fn apply(&self, visitor: &mut dyn Visitor) {
+    fn apply(&self, visitor: &mut impl Visitor) {
         visitor.visit_circle(self);
     }
 }
 impl Visitable for Rectangle {
-    fn apply(&self, visitor: &mut dyn Visitor) {
+    fn apply(&self, visitor: &mut impl Visitor) {
         visitor.visit_rectangle(self);
     }
 }
 impl Visitable for dyn Sphere {
-    fn apply(&self, visitor: &mut dyn Visitor) {
+    fn apply(&self, visitor: &mut impl Visitor) {
         visitor.visit_sphere(self);
     }
 }
 impl Visitable for Arc {
-    fn apply(&self, visitor: &mut dyn Visitor) {
+    fn apply(&self, visitor: &mut impl Visitor) {
         visitor.visit_arc(self);
     }
 }
 impl Visitable for dyn Cube {
-    fn apply(&self, visitor: &mut dyn Visitor) {
+    fn apply(&self, visitor: &mut impl Visitor) {
         visitor.visit_cube(self);
     }
 }
