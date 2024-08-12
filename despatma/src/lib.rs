@@ -40,8 +40,9 @@ use visitor::VisitorFunction;
 ///
 /// # Example input
 /// A factory method needs to be defined to use this macro. The factory method is passed as the first argument to the macro. The rest of the arguments passed to the macro are the elements the factory will create.
-/// ```compile_fail
+/// ```
 /// use despatma::abstract_factory;
+/// use std::fmt::Display;
 ///
 /// // A factory method
 /// // `Element` is a trait defined by you.
@@ -53,12 +54,31 @@ use visitor::VisitorFunction;
 /// // The factory method above (`Factory`) is the first input.
 /// #[abstract_factory(Factory, dyn Button, dyn Scroller, dyn Window)]
 /// pub trait GuiFactory: Display + Eq {}
+///
+/// pub trait Element {
+///     fn create() -> Self
+///     where
+///         Self: Sized;
+/// }
+///
+/// pub trait Button: Element {
+///     fn click(&self);
+/// }
+///
+/// pub trait Scroller: Element {
+///     fn scroll(&self, x: i32, y: i32);
+/// }
+///
+/// pub trait Window: Element {
+///     fn resize(&self, width: u32, height: u32);
+/// }
 /// ```
 ///
 /// ## Output
 /// This will create the following code
-/// ```compile_fail
+/// ```
 /// use despatma::abstract_factory;
+/// use std::fmt::Display;
 ///
 /// // A factory method
 /// // `Element` is a trait defined by you.
@@ -77,6 +97,24 @@ use visitor::VisitorFunction;
 ///     + Factory<dyn Window>
 /// {
 /// }
+///
+/// pub trait Element {
+///     fn create() -> Self
+///     where
+///         Self: Sized;
+/// }
+///
+/// pub trait Button: Element {
+///     fn click(&self);
+/// }
+///
+/// pub trait Scroller: Element {
+///     fn scroll(&self, x: i32, y: i32);
+/// }
+///
+/// pub trait Window: Element {
+///     fn resize(&self, width: u32, height: u32);
+/// }
 /// ```
 #[proc_macro_attribute]
 pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenStream {
@@ -88,17 +126,24 @@ pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenSt
 
 /// Expands a list of [despatma_lib::TraitSpecifier] elements over a template.
 /// The `TRAIT` and `CONCRETE` markers in the template will be replaced with each passed in element.
-/// The template is annotated with this attribute.
+/// The template itself is annotated with this attribute.
 ///
 /// This macro can be used to create concrete implementations for [abstract_factory].
 ///
 /// # Example input
-/// ```compile_fail
-/// use despatma::interpolate_traits;
+/// ```
+/// use despatma::{abstract_factory, interpolate_traits};
+/// use std::fmt::Display;
 ///
-/// // GuiFactory and Factory is defined in the abstract_factory example
+/// // GuiFactory and Factory are explained in the abstract_factory example
 /// struct GnomeFactory{}
-/// impl GuiFactory for GnomeFactory{}
+///
+/// pub trait Factory<T: Element + ?Sized> {
+///     fn create(&self, name: String) -> Box<T>;
+/// }
+///
+/// #[abstract_factory(Factory, dyn Button, dyn Scroller, dyn Window)]
+/// pub trait GuiFactory: Display + Eq {}
 ///
 /// // Implement the factory method for each GUI element
 /// #[interpolate_traits(
@@ -108,35 +153,145 @@ pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenSt
 /// )]
 /// impl Factory<dyn TRAIT> for GnomeFactory {
 ///     fn create(&self, name: String) -> Box<dyn TRAIT> {
-///         Box::new(CONCRETE::new(name))
+///         Box::new(CONCRETE::create(name))
 ///     }
+/// }
+///
+/// pub trait Element {
+///     fn create(name: String) -> Self
+///     where
+///         Self: Sized;
+/// }
+/// #[interpolate_traits(
+///     Element => GnomeButton,
+///     Element => Gnome2Scroller,
+///     Element => Gnome3Window,
+/// )]
+/// impl TRAIT for CONCRETE {
+///     fn create(name: String) -> Self {
+///         CONCRETE { name }
+///     }
+/// }
+///
+/// pub trait Button: Element {
+///     fn click(&self);
+/// }
+///
+/// pub trait Scroller: Element {
+///     fn scroll(&self, x: i32, y: i32);
+/// }
+///
+/// pub trait Window: Element {
+///     fn resize(&self, width: u32, height: u32);
+/// }
+///
+/// struct GnomeButton {
+///     name: String,
+/// }
+/// impl Button for GnomeButton {
+///     fn click(&self) {}
+/// }
+///
+/// struct Gnome2Scroller {
+///     name: String,
+/// }
+/// impl Scroller for Gnome2Scroller {
+///     fn scroll(&self, _x: i32, _y: i32) {}
+/// }
+///
+/// struct Gnome3Window {
+///     name: String,
+/// }
+/// impl Window for Gnome3Window {
+///     fn resize(&self, _width: u32, _height: u32) {}
 /// }
 /// ```
 ///
 /// ## Output
 /// This will implement the factory method (expand the template) for each element as follow.
-/// ```compile_fail
-/// use despatma::interpolate_traits;
+/// ```
+/// use despatma::{abstract_factory, interpolate_traits};
+/// use std::fmt::Display;
 ///
-/// // GuiFactory and Factory is defined in the abstract_factory example
+/// // GuiFactory and Factory are explained in the abstract_factory example
 /// struct GnomeFactory{}
-/// impl GuiFactory for GnomeFactory{}
+///
+/// pub trait Factory<T: Element + ?Sized> {
+///     fn create(&self, name: String) -> Box<T>;
+/// }
+///
+/// #[abstract_factory(Factory, dyn Button, dyn Scroller, dyn Window)]
+/// pub trait GuiFactory: Display + Eq {}
 ///
 /// // Implement the factory method for each GUI element
 /// impl Factory<dyn Button> for GnomeFactory {
 ///     fn create(&self, name: String) -> Box<dyn Button> {
-///         Box::new(GnomeButton::new(name))
+///         Box::new(GnomeButton::create(name))
 ///     }
 /// }
 /// impl Factory<dyn Scroller> for GnomeFactory {
 ///     fn create(&self, name: String) -> Box<dyn Scroller> {
-///         Box::new(Gnome2Scroller::new(name))
+///         Box::new(Gnome2Scroller::create(name))
 ///     }
 /// }
 /// impl Factory<dyn Window> for GnomeFactory {
 ///     fn create(&self, name: String) -> Box<dyn Window> {
-///         Box::new(Gnome3Window::new(name))
+///         Box::new(Gnome3Window::create(name))
 ///     }
+/// }
+///
+/// pub trait Element {
+///     fn create(name: String) -> Self
+///     where
+///         Self: Sized;
+/// }
+/// impl Element for GnomeButton {
+///     fn create(name: String) -> Self {
+///         GnomeButton { name }
+///     }
+/// }
+/// impl Element for Gnome2Scroller {
+///     fn create(name: String) -> Self {
+///         Gnome2Scroller { name }
+///     }
+/// }
+/// impl Element for Gnome3Window {
+///     fn create(name: String) -> Self {
+///         Gnome3Window { name }
+///     }
+/// }
+///
+/// pub trait Button: Element {
+///     fn click(&self);
+/// }
+///
+/// pub trait Scroller: Element {
+///     fn scroll(&self, x: i32, y: i32);
+/// }
+///
+/// pub trait Window: Element {
+///     fn resize(&self, width: u32, height: u32);
+/// }
+///
+/// struct GnomeButton {
+///     name: String,
+/// }
+/// impl Button for GnomeButton {
+///     fn click(&self) {}
+/// }
+///
+/// struct Gnome2Scroller {
+///     name: String,
+/// }
+/// impl Scroller for Gnome2Scroller {
+///     fn scroll(&self, _x: i32, _y: i32) {}
+/// }
+///
+/// struct Gnome3Window {
+///     name: String,
+/// }
+/// impl Window for Gnome3Window {
+///     fn resize(&self, _width: u32, _height: u32) {}
 /// }
 /// ```
 ///
@@ -153,38 +308,53 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///
 /// This macro does three things:
 /// 1. A `Visitor` trait is created with methods to visit each element. Each method calls a default helper function by default.
-/// 1. A helper function is created for each element. The idea is for this function to transverse into the elements children.
+/// 1. A helper function is created for each element. The idea is for this function to traverse into the elements children.
 /// 1. A `Visitable` trait is created that redirects / reflects each element back to its visitor
 ///
 /// # Example input
-/// ```compile_fail
+/// ```
 /// use despatma::visitor;
 ///
 /// visitor!(
-///     dyn Arc,
+///     Arc,
 ///     Rectangle,
-///     dyn Point,
+///     Point,
 /// );
+///
+/// struct Arc {
+///    center: Point,
+///    radius: u32,
+/// }
+///
+/// struct Rectangle {
+///     top_right: Point,
+///     bottom_left: Point,
+/// }
+///
+/// struct Point {
+///     x: i32,
+///     y: i32,
+/// }
 /// ```
 ///
 /// ## Output
 /// The three elements listed above will be created.
-/// ```compile_fail
+/// ```
 /// use despatma::visitor;
 ///
 /// pub trait Visitor {
-///     fn visit_arc(&mut self, arc: &dyn Arc) {
+///     fn visit_arc(&mut self, arc: &Arc) {
 ///         visit_arc(self, arc)
 ///     }
 ///     fn visit_rectangle(&mut self, rectangle: &Rectangle) {
 ///         visit_rectangle(self, rectangle)
 ///     }
-///     fn visit_point(&mut self, point: &dyn Point) {
+///     fn visit_point(&mut self, point: &Point) {
 ///         visit_point(self, point)
 ///     }
 /// }
 ///
-/// pub fn visit_arc<V>(visitor: &mut V, _arc: &dyn Arc)
+/// pub fn visit_arc<V>(visitor: &mut V, _arc: &Arc)
 /// where
 ///     V: Visitor + ?Sized,
 /// {
@@ -194,7 +364,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///     V: Visitor + ?Sized,
 /// {
 /// }
-/// pub fn visit_point<V>(_visitor: &mut V, _point: &dyn Point)
+/// pub fn visit_point<V>(_visitor: &mut V, _point: &Point)
 /// where
 ///     V: Visitor + ?Sized,
 /// {
@@ -203,7 +373,7 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// trait Visitable {
 ///     fn apply(&self, visitor: &mut dyn Visitor);
 /// }
-/// impl Visitable for dyn Arc {
+/// impl Visitable for Arc {
 ///     fn apply(&self, visitor: &mut dyn Visitor) {
 ///         visitor.visit_arc(self);
 ///     }
@@ -213,10 +383,25 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///         visitor.visit_rectangle(self);
 ///     }
 /// }
-/// impl Visitable for dyn Point {
+/// impl Visitable for Point {
 ///     fn apply(&self, visitor: &mut dyn Visitor) {
 ///         visitor.visit_point(self);
 ///     }
+/// }
+///
+/// struct Arc {
+///    center: Point,
+///    radius: u32,
+/// }
+///
+/// struct Rectangle {
+///     top_right: Point,
+///     bottom_left: Point,
+/// }
+///
+/// struct Point {
+///     x: i32,
+///     y: i32,
 /// }
 /// ```
 ///
@@ -224,125 +409,279 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 ///
 /// ## Usage
 /// Any visitor can now just implement the `Visitor` trait and provide its own implementation for any of the visitor methods.
-/// ```compile_fail
-/// use my_lib::{Visitor, visit_point};
-///
+/// ```
+/// # use despatma::visitor;
+/// #
+/// # visitor!(
+/// #     Arc,
+/// #     Rectangle,
+/// #     Point,
+/// # );
+/// #
+/// # struct Arc {
+/// #    center: Point,
+/// #    radius: u32,
+/// # }
+/// #
+/// # struct Rectangle {
+/// #     top_right: Point,
+/// #     bottom_left: Point,
+/// # }
+/// #
+/// # struct Point {
+/// #     x: i32,
+/// #     y: i32,
+/// # }
+/// #
 /// struct PointCounter {
 ///     pub count: usize,
 /// }
 ///
 /// impl Visitor for PointCounter {
-///     fn visit_point(&mut self, point: &dyn Point) {
+///     fn visit_point(&mut self, point: &Point) {
 ///         self.count += 1;
 ///
-///         // Call helper function to keep transversal intact
+///         // Call helper function to keep traversal intact
 ///         visit_point(self, point)
 ///     }
 /// }
 /// ```
 ///
 /// This visitor will now count all the points in a hierarchy.
-/// But there is a problem. The default helper implementations do not have any transversal code. This can be fixed with the `helper_tmpl` option.
+/// But there is a problem. The default helper implementations do not have any traversal code. This can be fixed with the `helper_tmpl` option.
 ///
 /// ## `helper_tmpl` option
 /// This option will fill the body of the helper method with the given code.
-/// ```compile_fail
+/// ```
 /// use despatma::visitor;
+/// #
+/// # struct Arc {
+/// #    center: Point,
+/// #    radius: u32,
+/// # }
+/// #
+/// # struct Rectangle {
+/// #     top_right: Point,
+/// #     bottom_left: Point,
+/// # }
+/// #
+/// # struct Point {
+/// #     x: i32,
+/// #     y: i32,
+/// # }
 ///
 /// visitor!(
-///     #[helper_tmpl = {visitor.visit_point(arc.center);} ]
-///     dyn Arc,
+///     #[helper_tmpl = {visitor.visit_point(&arc.center);} ]
+///     Arc,
 ///
 ///     #[
 ///         helper_tmpl = {
-///             visitor.visit_point(rectangle.top_left);
-///             visitor.visit_point(rectangle.bottom_right);
+///             visitor.visit_point(&rectangle.top_right);
+///             visitor.visit_point(&rectangle.bottom_left);
 ///         },
 ///     ]
 ///     Rectangle,
 ///
-///     dyn Point,
+///     Point,
 /// );
 /// ```
 ///
 /// The helper functions will now look as follow:
-/// ```compile_fail
+/// ```
 /// // `Visitor` is same as earlier
+/// # pub trait Visitor {
+/// #     fn visit_arc(&mut self, arc: &Arc) {
+/// #         visit_arc(self, arc)
+/// #     }
+/// #     fn visit_rectangle(&mut self, rectangle: &Rectangle) {
+/// #         visit_rectangle(self, rectangle)
+/// #     }
+/// #     fn visit_point(&mut self, point: &Point) {
+/// #         visit_point(self, point)
+/// #     }
+/// # }
 ///
-/// pub fn visit_arc<V>(visitor: &mut V, arc: &dyn Arc)
+/// pub fn visit_arc<V>(visitor: &mut V, arc: &Arc)
 /// where
 ///     V: Visitor + ?Sized,
 /// {
-///     visitor.visit_point(arc.center);
+///     visitor.visit_point(&arc.center);
 /// }
 /// pub fn visit_rectangle<V>(visitor: &mut V, rectangle: &Rectangle)
 /// where
 ///     V: Visitor + ?Sized,
 /// {
-///     visitor.visit_point(rectangle.top_left);
-///     visitor.visit_point(rectangle.bottom_right);
+///     visitor.visit_point(&rectangle.top_right);
+///     visitor.visit_point(&rectangle.bottom_left);
 /// }
-/// pub fn visit_point<V>(_visitor: &mut V, _point: &dyn Point)
+/// pub fn visit_point<V>(_visitor: &mut V, _point: &Point)
 /// where
 ///     V: Visitor + ?Sized,
 /// {
 /// }
 ///
 /// // `Visitable` is same as earlier
+/// # struct Arc {
+/// #    center: Point,
+/// #    radius: u32,
+/// # }
+/// #
+/// # struct Rectangle {
+/// #     top_right: Point,
+/// #     bottom_left: Point,
+/// # }
+/// #
+/// # struct Point {
+/// #     x: i32,
+/// #     y: i32,
+/// # }
 /// ```
 ///
 /// `PointCounter` will now work as expected!
 ///
 /// ## `no_defualt` option
 /// You might want to force visitors to implement a visit method and not have a trait default. The default trait implementation can be removed using the `no_default` option.
-/// ```compile_fail
+/// ```
 /// use despatma::visitor;
+/// #
+/// # struct Arc {
+/// #    center: Point,
+/// #    radius: u32,
+/// # }
+/// #
+/// # struct Rectangle {
+/// #     top_right: Point,
+/// #     bottom_left: Point,
+/// # }
+/// #
+/// # struct Point {
+/// #     x: i32,
+/// #     y: i32,
+/// # }
 ///
 /// visitor!(
 ///     #[
-///         helper_tmpl = {visitor.visit_point(arc.center);},
+///         helper_tmpl = {visitor.visit_point(&arc.center);},
 ///         no_default,
 ///     ]
-///     dyn Arc,
+///     Arc,
 ///
 ///     #[
 ///         helper_tmpl = {
-///             visitor.visit_point(rectangle.top_left);
-///             visitor.visit_point(rectangle.bottom_right);
+///             visitor.visit_point(&rectangle.top_right);
+///             visitor.visit_point(&rectangle.bottom_left);
 ///         },
 ///     ]
 ///     Rectangle,
 ///
-///     dyn Point,
+///     Point,
 /// );
 /// ```
 ///
 /// The `Visitor` trait will now be as follow and `PointCounter` will have to implement the `visit_arc()` method too.
-/// ```compile_fail
+/// ```
 /// pub trait Visitor {
-///     fn visit_arc(&mut self, arc: &dyn Arc);
+///     fn visit_arc(&mut self, arc: &Arc);
 ///     fn visit_rectangle(&mut self, rectangle: &Rectangle) {
 ///         visit_rectangle(self, rectangle)
 ///     }
-///     fn visit_point(&mut self, point: &dyn Point) {
+///     fn visit_point(&mut self, point: &Point) {
 ///         visit_point(self, point)
 ///     }
 /// }
 ///
 /// // Rest is same as earlier
+/// # pub fn visit_arc<V>(visitor: &mut V, arc: &Arc)
+/// # where
+/// #     V: Visitor + ?Sized,
+/// # {
+/// #     visitor.visit_point(&arc.center);
+/// # }
+/// # pub fn visit_rectangle<V>(visitor: &mut V, rectangle: &Rectangle)
+/// # where
+/// #     V: Visitor + ?Sized,
+/// # {
+/// #     visitor.visit_point(&rectangle.top_right);
+/// #     visitor.visit_point(&rectangle.bottom_left);
+/// # }
+/// # pub fn visit_point<V>(_visitor: &mut V, _point: &Point)
+/// # where
+/// #     V: Visitor + ?Sized,
+/// # {
+/// # }
+/// #
+/// # struct Arc {
+/// #    center: Point,
+/// #    radius: u32,
+/// # }
+/// #
+/// # struct Rectangle {
+/// #     top_right: Point,
+/// #     bottom_left: Point,
+/// # }
+/// #
+/// # struct Point {
+/// #     x: i32,
+/// #     y: i32,
+/// # }
 /// ```
 ///
 /// # Calling a visitor
 /// Suppose the follow code exists
-/// ```compile_fail
+/// ```
+/// # use despatma::visitor;
+/// #
+/// # visitor!(
+/// #     Arc,
+/// #     Rectangle,
+/// #     Point,
+/// # );
+/// #
+/// # struct Arc {
+/// #    center: Point,
+/// #    radius: u32,
+/// # }
+/// #
+/// # struct Rectangle {
+/// #     top_right: Point,
+/// #     bottom_left: Point,
+/// # }
+/// #
+/// # impl Rectangle {
+/// #     fn new(left: i32, bottom: i32, right: i32, top: i32) -> Self {
+/// #         Self {
+/// #             top_right: Point { x: right, y: top },
+/// #             bottom_left: Point { x: left, y: bottom },
+/// #         }
+/// #     }
+/// # }
+/// #
+/// #
+/// # struct Point {
+/// #     x: i32,
+/// #     y: i32,
+/// # }
+/// #
+/// # struct PointCounter {
+/// #     pub count: usize,
+/// # }
+/// #
+/// # impl Visitor for PointCounter {
+/// #     fn visit_point(&mut self, point: &Point) {
+/// #         self.count += 1;
+/// #
+/// #         // Call helper function to keep traversal intact
+/// #         visit_point(self, point)
+/// #     }
+/// # }
 /// // Create a rectangle with bottom-left point (0, 0) and top-right point (10, 12)
 /// let rect = Rectangle::new(0, 0, 10, 12);
-/// let point_stats = PointCounter{};
+/// let mut point_stats = PointCounter{ count: 0 };
 ///
 /// // Invoke visitor on hierarchy options
-/// rect.apply(&mut dyn point_stats); // 1 - Preferred
+/// rect.apply(&mut point_stats); // 1 - Preferred
 /// visit_rectangle(&mut point_stats, &rect); // 2
-/// point_stats.visit_rectangle(&dyn rect); // 3
+/// point_stats.visit_rectangle(&rect); // 3
 /// ```
 ///
 /// The visitor (`PointCounter`) can be invoked in three ways
