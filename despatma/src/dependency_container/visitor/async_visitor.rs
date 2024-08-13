@@ -88,41 +88,37 @@ mod tests {
         let mut async_visitor = AsyncVisitor::new(container.dependencies.clone());
         async_visitor.visit_container_mut(&mut container);
 
-        assert_eq!(
-            container
+        assert!(
+            !container
                 .dependencies
                 .get::<Ident>(&parse_quote!(config))
                 .unwrap()
                 .borrow()
-                .is_async,
-            false
+                .is_async
         );
-        assert_eq!(
+        assert!(
             container
                 .dependencies
                 .get::<Ident>(&parse_quote!(logger))
                 .unwrap()
                 .borrow()
-                .is_async,
-            true
+                .is_async
         );
-        assert_eq!(
+        assert!(
             container
                 .dependencies
                 .get::<Ident>(&parse_quote!(db))
                 .unwrap()
                 .borrow()
-                .is_async,
-            true
+                .is_async
         );
-        assert_eq!(
+        assert!(
             container
                 .dependencies
                 .get::<Ident>(&parse_quote!(service))
                 .unwrap()
                 .borrow()
-                .is_async,
-            true
+                .is_async
         );
     }
 }
