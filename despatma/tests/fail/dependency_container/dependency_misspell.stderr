@@ -7,8 +7,8 @@ error: The 'canfi' dependency has not been registered
 20 |     fn service(&self, canfi: Config) -> Service {
    |                       ^^^^^
 
-error[E0601]: `main` function not found in crate `$CRATE`
-  --> tests/fail/dependency_container/dependency_misspell.rs:23:2
+error[E0433]: failed to resolve: use of undeclared type `DependencyContainer`
+  --> tests/fail/dependency_container/dependency_misspell.rs:26:21
    |
-23 | }
-   |  ^ consider adding a `main` function to `$DIR/tests/fail/dependency_container/dependency_misspell.rs`
+26 |     let container = DependencyContainer::new();
+   |                     ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DependencyContainer`

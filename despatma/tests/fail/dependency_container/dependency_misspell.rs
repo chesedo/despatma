@@ -18,6 +18,11 @@ impl DependencyContainer {
     }
 
     fn service(&self, canfi: Config) -> Service {
-        Service::new(config.port)
+        Service::new(canfi.port)
     }
+}
+
+fn main() {
+    let container = DependencyContainer::new();
+    let _service = container.service();
 }

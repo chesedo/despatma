@@ -1,9 +1,11 @@
 use indexmap::IndexMap;
 use proc_macro2::TokenStream;
-use proc_macro_error::emit_error;
 use quote::{quote, ToTokens};
-use strsim::levenshtein;
 use syn::{Block, Ident, ImplItem, ItemImpl, Signature, Type};
+
+use self::visitor::{MutVisitor, WiringVisitor};
+
+mod visitor;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {
@@ -70,43 +72,10 @@ impl Container {
     }
 
     pub fn validate(&self) {
-        validate_dependencies(&self.dependencies);
+        let mut wiring_visitor = WiringVisitor::new(self.dependencies.keys().cloned().collect());
+
+        wiring_visitor.visit_container(&self);
     }
-}
-
-fn validate_dependencies(dependencies: &IndexMap<Ident, Dependency>) {
-    // Check if all dependencies are present
-    for dep in dependencies.values() {
-        for child_dep in &dep.dependencies {
-            if !dependencies.contains_key(&child_dep.ident) {
-                if let Some(best_match) =
-                    get_best_dependency_match(dependencies, &child_dep.ident.to_string())
-                {
-                    emit_error!(child_dep.ident, "The '{}' dependency has not been registered", child_dep.ident; hint = best_match.span() => format!("Did you mean `{}`?", best_match));
-                } else {
-                    emit_error!(
-                        child_dep.ident,
-                        "Dependency not found. Did you forget to add it?";
-                        hint = "Try adding it with `fn {}(&self) ...`", child_dep.ident
-                    );
-                }
-            }
-        }
-    }
-}
-
-const MISSPELLING_THRESHOLD: usize = 3;
-
-fn get_best_dependency_match<'a>(
-    dependencies: &'a IndexMap<Ident, Dependency>,
-    needle: &str,
-) -> Option<&'a Ident> {
-    dependencies
-        .keys()
-        .map(|d| (d, levenshtein(&needle.to_string(), &d.to_string())))
-        .filter(|(_, distance)| *distance <= MISSPELLING_THRESHOLD)
-        .min_by_key(|(_, distance)| *distance)
-        .map(|(d, _)| d)
 }
 
 impl ToTokens for Container {
