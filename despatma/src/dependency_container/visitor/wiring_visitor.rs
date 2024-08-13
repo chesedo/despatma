@@ -4,7 +4,7 @@ use syn::Ident;
 
 use crate::dependency_container::ChildDependency;
 
-use super::{mut_visit_child_dependency, MutVisitor};
+use super::{visit_child_dependency, Visit};
 
 /// This visitor is responsible for checking if all dependencies have been registered in the container.
 /// So if `a` has a dependency on `b`, this visitor will check if `b` has been registered in the container.
@@ -14,6 +14,7 @@ pub struct WiringVisitor {
     errors: Vec<WiringError>,
 }
 
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 struct WiringError {
     requested: Ident,
     best_match: Option<Ident>,
@@ -31,7 +32,7 @@ impl WiringVisitor {
     }
 }
 
-impl MutVisitor for WiringVisitor {
+impl Visit for WiringVisitor {
     fn visit_child_dependency(&mut self, child_dependency: &ChildDependency) {
         if !self.dependencies.contains(&child_dependency.ident) {
             let best_match =
@@ -44,16 +45,14 @@ impl MutVisitor for WiringVisitor {
         }
 
         // Keep traversing the tree
-        mut_visit_child_dependency(self, child_dependency);
+        visit_child_dependency(self, child_dependency);
     }
-}
 
-impl Drop for WiringVisitor {
-    fn drop(&mut self) {
+    fn emit_errors(self) {
         let Self { errors, .. } = self;
 
         for error in errors {
-            if let Some(best_match) = &error.best_match {
+            if let Some(best_match) = error.best_match {
                 emit_error!(error.requested, "The '{}' dependency has not been registered", error.requested; hint = best_match.span() => format!("Did you mean `{}`?", best_match));
             } else {
                 emit_error!(
@@ -76,4 +75,47 @@ fn get_best_dependency_match(dependencies: &Vec<Ident>, needle: &str) -> Option<
         .filter(|(_, distance)| *distance <= MISSPELLING_THRESHOLD)
         .min_by_key(|(_, distance)| *distance)
         .map(|(d, _)| d.clone())
+}
+
+#[cfg(test)]
+mod tests {
+    use syn::parse_quote;
+
+    use crate::dependency_container::Container;
+
+    use super::*;
+
+    #[test]
+    fn misspell() {
+        let mut wiring_visitor = WiringVisitor::new(vec![
+            Ident::new("foo", proc_macro2::Span::call_site()),
+            Ident::new("bar", proc_macro2::Span::call_site()),
+            Ident::new("baz", proc_macro2::Span::call_site()),
+        ]);
+        let container = Container::from_item_impl(parse_quote!(
+            impl Dependencies {
+                fn service(&self, zoo: Foo, barrier: Barrier, baz: Baz) -> Service {
+                    Service
+                }
+            }
+        ));
+
+        wiring_visitor.visit_container(&container);
+
+        let WiringVisitor { errors, .. } = wiring_visitor;
+
+        assert_eq!(
+            errors,
+            vec![
+                WiringError {
+                    requested: Ident::new("zoo", proc_macro2::Span::call_site()),
+                    best_match: Some(Ident::new("foo", proc_macro2::Span::call_site())),
+                },
+                WiringError {
+                    requested: Ident::new("barrier", proc_macro2::Span::call_site()),
+                    best_match: None,
+                }
+            ]
+        );
+    }
 }

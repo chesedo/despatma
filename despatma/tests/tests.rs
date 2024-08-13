@@ -28,12 +28,11 @@ pub fn pass_dependency_container() {
         t.pass(path);
     }
 
-    t.pass("tests/expand/dependency_container/*[!.expanded].rs");
     // Get any errors before we run the macrotest
     // Else macrotest might fail and we won't know why
     drop(t);
 
-    // macrotest::expand("tests/expand/dependency_container/*.rs");
+    macrotest::expand("tests/expand/dependency_container/*.rs");
 }
 
 #[test]

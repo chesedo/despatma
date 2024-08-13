@@ -706,9 +706,10 @@ pub fn visitor(tokens: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn dependency_container(_tokens: TokenStream, impl_expr: TokenStream) -> TokenStream {
     let input = parse_macro_input!(impl_expr as ItemImpl);
-    let container = Container::from_item_impl(input);
+    let mut container = Container::from_item_impl(input);
 
     container.validate();
+    container.update();
 
     quote! {
         #container
