@@ -4,6 +4,11 @@ pub fn pass_abstract_factory() {
 }
 
 #[test]
+pub fn pass_dependency_container() {
+    macrotest::expand("tests/expand/dependency_container/*.rs");
+}
+
+#[test]
 pub fn pass_visitor() {
     macrotest::expand("tests/expand/visitor/*.rs");
 }

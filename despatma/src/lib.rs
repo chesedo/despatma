@@ -18,13 +18,17 @@
 //! [interpolate_traits]: macro@self::interpolate_traits
 //! [visitor]: macro@self::visitor
 mod abstract_factory;
+mod dependency_container;
 mod visitor;
 
 extern crate proc_macro;
 
+use dependency_container::Container;
 use proc_macro::TokenStream;
+use proc_macro_error::proc_macro_error;
+use quote::quote;
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, ItemTrait, Token};
+use syn::{parse_macro_input, ItemImpl, ItemTrait, Token};
 use tokenstream2_tmpl::Interpolate;
 
 use abstract_factory::AbstractFactoryAttribute;
@@ -696,4 +700,18 @@ pub fn visitor(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as VisitorFunction);
 
     input.expand().into()
+}
+
+#[proc_macro_error]
+#[proc_macro_attribute]
+pub fn dependency_container(_tokens: TokenStream, impl_expr: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(impl_expr as ItemImpl);
+    let container = Container::from_item_impl(input);
+
+    container.validate();
+
+    quote! {
+        #container
+    }
+    .into()
 }
