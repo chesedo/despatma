@@ -21,3 +21,8 @@ impl DependencyContainer {
         Service::new(config.port)
     }
 }
+
+fn main() {
+    let container = DependencyContainer::new();
+    let _service = container.service();
+}

@@ -14,10 +14,15 @@ impl Task {
 #[despatma::dependency_container]
 impl Dependencies {
     fn configuration(&self) -> Configuration {
-        Config { port: 8080 }
+        Configuration { port: 8080 }
     }
 
     fn task(&self, configuration: &Configuration) -> Task {
-        Task::new(config.port)
+        Task::new(configuration.port)
     }
+}
+
+fn main() {
+    let deps = Dependencies::new();
+    let _task = deps.task();
 }

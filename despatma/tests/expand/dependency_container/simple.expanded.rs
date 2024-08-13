@@ -29,3 +29,7 @@ impl DependencyContainer {
         self.create_service(config)
     }
 }
+fn main() {
+    let container = DependencyContainer::new();
+    let _service = container.service();
+}
