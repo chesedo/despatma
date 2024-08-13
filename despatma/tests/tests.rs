@@ -45,5 +45,6 @@ pub fn pass_visitor() {
 pub fn fail() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/abstract_factory/*.rs");
+    t.compile_fail("tests/fail/dependency_container/*.rs");
     t.compile_fail("tests/fail/visitor/*.rs");
 }

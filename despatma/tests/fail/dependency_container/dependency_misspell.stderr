@@ -1,0 +1,14 @@
+error: The 'canfi' dependency has not been registered
+
+         = help: Did you mean `config`?
+
+  --> tests/fail/dependency_container/dependency_misspell.rs:20:23
+   |
+20 |     fn service(&self, canfi: Config) -> Service {
+   |                       ^^^^^
+
+error[E0601]: `main` function not found in crate `$CRATE`
+  --> tests/fail/dependency_container/dependency_misspell.rs:23:2
+   |
+23 | }
+   |  ^ consider adding a `main` function to `$DIR/tests/fail/dependency_container/dependency_misspell.rs`
