@@ -35,7 +35,7 @@ impl VisitMut for AsyncVisitor {
             .dependencies
             .iter()
             .filter_map(|d| self.dependencies.get(&d.ident))
-            .map(|d| d.clone())
+            .cloned()
             .collect();
 
         let has_sync_child = dependencies.iter().any(|d| {

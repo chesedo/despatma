@@ -68,10 +68,10 @@ impl Visit for WiringVisitor {
 /// The maximum distance between two strings for them to be considered a misspelling.
 const MISSPELLING_THRESHOLD: usize = 3;
 
-fn get_best_dependency_match(dependencies: &Vec<Ident>, needle: &str) -> Option<Ident> {
+fn get_best_dependency_match(dependencies: &[Ident], needle: &str) -> Option<Ident> {
     dependencies
         .iter()
-        .map(|d| (d, levenshtein(&needle.to_string(), &d.to_string())))
+        .map(|d| (d, levenshtein(needle, &d.to_string())))
         .filter(|(_, distance)| *distance <= MISSPELLING_THRESHOLD)
         .min_by_key(|(_, distance)| *distance)
         .map(|(d, _)| d.clone())

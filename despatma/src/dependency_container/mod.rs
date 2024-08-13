@@ -78,7 +78,7 @@ impl Container {
     pub fn validate(&self) {
         let mut wiring_visitor = WiringVisitor::new(self.dependencies.keys().cloned().collect());
 
-        wiring_visitor.visit_container(&self);
+        wiring_visitor.visit_container(self);
         wiring_visitor.emit_errors();
     }
 
