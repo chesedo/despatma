@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{Block, Ident, ImplItem, ItemImpl, Signature, Token, Type};
 
-use self::visitor::{AsyncVisitor, Visit, VisitMut, WiringVisitor};
+use self::visitor::{AsyncVisitor, ImplTraitButRegisteredConcrete, Visit, VisitMut, WiringVisitor};
 
 mod visitor;
 
@@ -80,6 +80,11 @@ impl Container {
 
         wiring_visitor.visit_container(self);
         wiring_visitor.emit_errors();
+
+        let mut rpit_requesting_concrete =
+            ImplTraitButRegisteredConcrete::new(self.dependencies.clone());
+        rpit_requesting_concrete.visit_container(self);
+        rpit_requesting_concrete.emit_errors();
     }
 
     pub fn update(&mut self) {

@@ -1,9 +1,11 @@
 use super::{ChildDependency, Container, Dependency};
 
 mod async_visitor;
+mod impl_trait_but_registered_concrete;
 mod wiring_visitor;
 
 pub use async_visitor::AsyncVisitor;
+pub use impl_trait_but_registered_concrete::ImplTraitButRegisteredConcrete;
 pub use wiring_visitor::WiringVisitor;
 
 /// A visitor used to validate the struct that will be turned into a dependency container.

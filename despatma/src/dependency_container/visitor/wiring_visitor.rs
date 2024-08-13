@@ -11,11 +11,11 @@ use super::{visit_child_dependency, Visit};
 /// If not, it will emit an error.
 pub struct WiringVisitor {
     dependencies: Vec<Ident>,
-    errors: Vec<WiringError>,
+    errors: Vec<Error>,
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-struct WiringError {
+struct Error {
     requested: Ident,
     best_match: Option<Ident>,
 }
@@ -38,7 +38,7 @@ impl Visit for WiringVisitor {
             let best_match =
                 get_best_dependency_match(&self.dependencies, &child_dependency.ident.to_string());
 
-            self.errors.push(WiringError {
+            self.errors.push(Error {
                 requested: child_dependency.ident.clone(),
                 best_match,
             });
@@ -107,11 +107,11 @@ mod tests {
         assert_eq!(
             errors,
             vec![
-                WiringError {
+                Error {
                     requested: Ident::new("zoo", proc_macro2::Span::call_site()),
                     best_match: Some(Ident::new("foo", proc_macro2::Span::call_site())),
                 },
-                WiringError {
+                Error {
                     requested: Ident::new("barrier", proc_macro2::Span::call_site()),
                     best_match: None,
                 }
