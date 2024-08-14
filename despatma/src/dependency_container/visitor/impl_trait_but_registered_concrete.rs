@@ -48,7 +48,7 @@ impl Visit for ImplTraitButRegisteredConcrete {
         {
             let child_ident = match pat_type.pat.as_ref() {
                 syn::Pat::Ident(pat_ident) => pat_ident.ident.clone(),
-                _ => unreachable!("a dependency argument has to be an ident"),
+                _ => continue,
             };
 
             if let Some(child_dependency) = self.dependencies.get(&child_ident) {

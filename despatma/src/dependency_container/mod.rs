@@ -2,6 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use indexmap::IndexMap;
 use proc_macro2::TokenStream;
+use proc_macro_error::emit_error;
 use quote::{quote, ToTokens};
 use syn::{Block, Ident, ImplItem, ItemImpl, Signature, Token, Type};
 
@@ -154,7 +155,10 @@ impl Container {
                             syn::FnArg::Typed(pat_type) => {
                                 let ident = match pat_type.pat.as_ref() {
                                     syn::Pat::Ident(pat_ident) => pat_ident.ident.clone(),
-                                    _ => todo!(),
+                                    pat => {
+                                        emit_error!(pat, "This argument type is not supported");
+                                        return None;
+                                    }
                                 };
                                 Some(ChildDependency {
                                     ident,
@@ -174,7 +178,10 @@ impl Container {
                         })),
                     ))
                 }
-                _ => todo!(),
+                impl_item => {
+                    emit_error!(impl_item, "This impl item is not supported");
+                    None
+                }
             })
             .collect();
 
