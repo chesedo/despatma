@@ -1,12 +1,12 @@
 use super::{ChildDependency, Container, Dependency};
 
-mod async_visitor;
+mod check_wiring;
+mod fix_async_tree;
 mod impl_trait_but_registered_concrete;
-mod wiring_visitor;
 
-pub use async_visitor::AsyncVisitor;
+pub use check_wiring::CheckWiring;
+pub use fix_async_tree::FixAsyncTree;
 pub use impl_trait_but_registered_concrete::ImplTraitButRegisteredConcrete;
-pub use wiring_visitor::WiringVisitor;
 
 /// A visitor used to validate the struct that will be turned into a dependency container.
 /// If the visitor found any errors then they should be emit in [emit_errors].

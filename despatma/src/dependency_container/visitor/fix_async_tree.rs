@@ -10,12 +10,12 @@ use super::VisitMut;
 /// Visitor used to determine if any child dependencies in the calltree is async. Because if any
 /// child dependencies are async, then the parent dependency must also be async. Which this
 /// visitor updates correcly.
-pub struct AsyncVisitor {
+pub struct FixAsyncTree {
     dependencies: IndexMap<Ident, Rc<RefCell<Dependency>>>,
     visited_dependencies: HashSet<Ident>,
 }
 
-impl AsyncVisitor {
+impl FixAsyncTree {
     pub fn new(dependencies: IndexMap<Ident, Rc<RefCell<Dependency>>>) -> Self {
         Self {
             dependencies,
@@ -24,7 +24,7 @@ impl AsyncVisitor {
     }
 }
 
-impl VisitMut for AsyncVisitor {
+impl VisitMut for FixAsyncTree {
     fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
         // We want to be efficient and not visit the same dependency multiple times
         if self.visited_dependencies.contains(&dependency.sig.ident) {
@@ -64,7 +64,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn make_async() {
+    fn fix_async_tree() {
         let mut container = Container::from_item_impl(parse_quote!(
             impl Dependencies {
                 fn config(&self) -> Config {
@@ -85,7 +85,7 @@ mod tests {
             }
         ));
 
-        let mut async_visitor = AsyncVisitor::new(container.dependencies.clone());
+        let mut async_visitor = FixAsyncTree::new(container.dependencies.clone());
         async_visitor.visit_container_mut(&mut container);
 
         assert!(

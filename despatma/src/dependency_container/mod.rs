@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{Block, Ident, ImplItem, ItemImpl, Signature, Token, Type};
 
-use self::visitor::{AsyncVisitor, ImplTraitButRegisteredConcrete, Visit, VisitMut, WiringVisitor};
+use self::visitor::{CheckWiring, FixAsyncTree, ImplTraitButRegisteredConcrete, Visit, VisitMut};
 
 mod visitor;
 
@@ -185,7 +185,7 @@ impl Container {
     }
 
     pub fn validate(&self) {
-        let mut wiring_visitor = WiringVisitor::new(self.dependencies.keys().cloned().collect());
+        let mut wiring_visitor = CheckWiring::new(self.dependencies.keys().cloned().collect());
 
         wiring_visitor.visit_container(self);
         wiring_visitor.emit_errors();
@@ -197,7 +197,7 @@ impl Container {
     }
 
     pub fn update(&mut self) {
-        let mut async_visitor = AsyncVisitor::new(self.dependencies.clone());
+        let mut async_visitor = FixAsyncTree::new(self.dependencies.clone());
         async_visitor.visit_container_mut(self);
     }
 }

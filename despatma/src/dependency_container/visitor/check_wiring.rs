@@ -9,7 +9,7 @@ use super::{visit_child_dependency, Visit};
 /// This visitor is responsible for checking if all dependencies have been registered in the container.
 /// So if `a` has a dependency on `b`, this visitor will check if `b` has been registered in the container.
 /// If not, it will emit an error.
-pub struct WiringVisitor {
+pub struct CheckWiring {
     dependencies: Vec<Ident>,
     errors: Vec<Error>,
 }
@@ -20,7 +20,7 @@ struct Error {
     best_match: Option<Ident>,
 }
 
-impl WiringVisitor {
+impl CheckWiring {
     /// Create a new `WiringVisitor` with the given available dependencies.
     /// Ie. if this visitor finds a requested child dependency which is not in the list of available dependencies,
     /// it will emit an error.
@@ -32,7 +32,7 @@ impl WiringVisitor {
     }
 }
 
-impl Visit for WiringVisitor {
+impl Visit for CheckWiring {
     fn visit_child_dependency(&mut self, child_dependency: &ChildDependency) {
         if !self.dependencies.contains(&child_dependency.ident) {
             let best_match =
@@ -86,8 +86,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn misspell() {
-        let mut wiring_visitor = WiringVisitor::new(vec![
+    fn check_wiring() {
+        let mut wiring_visitor = CheckWiring::new(vec![
             Ident::new("foo", proc_macro2::Span::call_site()),
             Ident::new("bar", proc_macro2::Span::call_site()),
             Ident::new("baz", proc_macro2::Span::call_site()),
@@ -102,7 +102,7 @@ mod tests {
 
         wiring_visitor.visit_container(&container);
 
-        let WiringVisitor { errors, .. } = wiring_visitor;
+        let CheckWiring { errors, .. } = wiring_visitor;
 
         assert_eq!(
             errors,
