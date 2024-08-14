@@ -97,7 +97,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn invalid_case() {
+    fn impl_trait_but_registered_concrete() {
         let container = Container::from_item_impl(parse_quote!(
             impl Dependencies {
                 fn db(&self) -> impl DB {
