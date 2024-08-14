@@ -166,8 +166,8 @@ impl Dependency {
             attrs,
             sig,
             block: _,
-            dependencies,
             is_async,
+            dependencies,
         } = self;
         let Signature {
             constness,

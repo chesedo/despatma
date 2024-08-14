@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use indexmap::IndexMap;
 use proc_macro_error::emit_error;
 use quote::ToTokens;
-use syn::{Ident, PatType, TypeImplTrait};
+use syn::{FnArg, Ident, Pat, PatType, ReturnType, Type, TypeImplTrait};
 
 use crate::dependency_container::Dependency;
 
@@ -33,40 +33,41 @@ impl ImplTraitButRegisteredConcrete {
 
 impl Visit for ImplTraitButRegisteredConcrete {
     fn visit_dependency(&mut self, dependency: &Dependency) {
-        for pat_type in dependency
+        let path_inputs = dependency
             .sig
             .inputs
             .iter()
             .filter_map(|input| match input {
-                syn::FnArg::Receiver(_) => None,
-                syn::FnArg::Typed(pat_type) => match pat_type.ty.as_ref() {
-                    // syn::Type::ImplTrait(impl_trait) => Some(pat_type),
-                    syn::Type::Path(_) => Some(pat_type),
+                FnArg::Receiver(_) => None,
+                FnArg::Typed(pat_type) => match pat_type.ty.as_ref() {
+                    Type::Path(_) => Some(pat_type),
                     _ => None,
                 },
-            })
-        {
+            });
+
+        for pat_type in path_inputs {
             let child_ident = match pat_type.pat.as_ref() {
-                syn::Pat::Ident(pat_ident) => pat_ident.ident.clone(),
+                Pat::Ident(pat_ident) => pat_ident.ident.clone(),
                 _ => continue,
             };
 
-            if let Some(child_dependency) = self.dependencies.get(&child_ident) {
-                let child_dependency = child_dependency.borrow();
-                let child_return_type = match &child_dependency.sig.output {
-                    // Handled by another validator
-                    syn::ReturnType::Default => continue,
-                    syn::ReturnType::Type(_, ty) => match ty.as_ref() {
-                        syn::Type::ImplTrait(impl_trait) => impl_trait,
-                        _ => continue,
-                    },
-                };
+            let Some(child_dependency) = self.dependencies.get(&child_ident) else {
+                continue;
+            };
 
-                self.errors.push(Error {
-                    requested: pat_type.clone(),
-                    registered: child_return_type.clone(),
-                });
-            }
+            let child_dependency = child_dependency.borrow();
+            let child_return_type = match &child_dependency.sig.output {
+                ReturnType::Default => continue,
+                ReturnType::Type(_, ty) => match ty.as_ref() {
+                    Type::ImplTrait(impl_trait) => impl_trait,
+                    _ => continue,
+                },
+            };
+
+            self.errors.push(Error {
+                requested: pat_type.clone(),
+                registered: child_return_type.clone(),
+            });
         }
     }
 

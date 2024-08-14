@@ -4,7 +4,7 @@ use syn::Ident;
 
 use crate::dependency_container::ChildDependency;
 
-use super::{visit_child_dependency, Visit};
+use super::Visit;
 
 /// This visitor is responsible for checking if all dependencies have been registered in the container.
 /// So if `a` has a dependency on `b`, this visitor will check if `b` has been registered in the container.
@@ -43,22 +43,28 @@ impl Visit for CheckWiring {
                 best_match,
             });
         }
-
-        // Keep traversing the tree
-        visit_child_dependency(self, child_dependency);
     }
 
     fn emit_errors(self) {
         let Self { errors, .. } = self;
 
-        for error in errors {
-            if let Some(best_match) = error.best_match {
-                emit_error!(error.requested, "The '{}' dependency has not been registered", error.requested; hint = best_match.span() => format!("Did you mean `{}`?", best_match));
+        for Error {
+            requested,
+            best_match,
+        } in errors
+        {
+            if let Some(best_match) = best_match {
+                emit_error!(
+                    requested,
+                    "The '{}' dependency has not been registered",
+                    requested;
+                    hint = best_match.span() => format!("Did you mean `{}`?", best_match)
+                );
             } else {
                 emit_error!(
-                    error.requested,
+                    requested,
                     "Dependency not found. Did you forget to add it?";
-                    hint = "Try adding it with `fn {}(&self) ...`", error.requested
+                    hint = "Try adding it with `fn {}(&self) ...`", requested
                 );
             }
         }
