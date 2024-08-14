@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use proc_macro2::TokenStream;
 use proc_macro_error::emit_error;
 use quote::{quote, ToTokens};
-use syn::{Block, Ident, ImplItem, ItemImpl, Signature, Token, Type};
+use syn::{Attribute, Block, Ident, ImplItem, ItemImpl, Signature, Token, Type};
 
 use self::visitor::{CheckWiring, FixAsyncTree, ImplTraitButRegisteredConcrete, Visit, VisitMut};
 
@@ -12,12 +12,14 @@ mod visitor;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {
+    attrs: Vec<Attribute>,
     self_ty: Type,
     dependencies: IndexMap<Ident, Rc<RefCell<Dependency>>>,
 }
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 struct Dependency {
+    attrs: Vec<Attribute>,
     sig: Signature,
     block: Block,
     is_async: bool,
@@ -27,6 +29,7 @@ struct Dependency {
 impl Dependency {
     fn create_dependency_fn(&self) -> (Ident, TokenStream) {
         let Self {
+            attrs: _,
             sig,
             block,
             is_async: _,
@@ -61,6 +64,7 @@ impl Dependency {
         container_dependencies: &IndexMap<Ident, Rc<RefCell<Dependency>>>,
     ) -> TokenStream {
         let Dependency {
+            attrs,
             sig,
             block: _,
             dependencies,
@@ -124,6 +128,7 @@ impl Dependency {
         };
 
         quote! {
+            #(#attrs)*
             pub #constness #pub_asyncness #unsafety #abi #fn_token #ident #generics(&self) #output {
                 #(#create_dependencies)*
 
@@ -171,6 +176,7 @@ impl Container {
                     Some((
                         item_fn.sig.ident.clone(),
                         Rc::new(RefCell::new(Dependency {
+                            attrs: item_fn.attrs,
                             is_async: item_fn.sig.asyncness.is_some(),
                             sig: item_fn.sig,
                             block: item_fn.block,
@@ -186,6 +192,7 @@ impl Container {
             .collect();
 
         Self {
+            attrs: item_impl.attrs,
             self_ty: item_impl.self_ty.as_ref().clone(),
             dependencies,
         }
@@ -211,6 +218,7 @@ impl Container {
 
 impl ToTokens for Container {
     fn to_tokens(&self, tokens: &mut TokenStream) {
+        let self_attrs = &self.attrs;
         let self_ty = &self.self_ty;
         let self_dependencies = &self.dependencies;
 
@@ -228,6 +236,7 @@ impl ToTokens for Container {
         });
 
         tokens.extend(quote! {
+            #(#self_attrs)*
             struct #self_ty;
 
             impl #self_ty {
@@ -261,10 +270,12 @@ mod tests {
                 }
             ));
             let expected = Container {
+                attrs: vec![],
                 self_ty: parse_quote!(DependencyContainer),
                 dependencies: IndexMap::from_iter(vec![(
                     parse_quote!(config),
                     Rc::new(RefCell::new(Dependency {
+                        attrs: vec![],
                         sig: parse_quote!(fn config(&self) -> Config),
                         block: parse_quote!({ Config }),
                         is_async: false,
@@ -286,10 +297,12 @@ mod tests {
                 }
             ));
             let expected = Container {
+                attrs: vec![],
                 self_ty: parse_quote!(Dependencies),
                 dependencies: IndexMap::from_iter(vec![(
                     parse_quote!(service),
                     Rc::new(RefCell::new(Dependency {
+                        attrs: vec![],
                         sig: parse_quote!(fn service(&self, config: Config) -> Service),
                         block: parse_quote!({ Service }),
                         is_async: false,
@@ -314,10 +327,12 @@ mod tests {
                 }
             ));
             let expected = Container {
+                attrs: vec![],
                 self_ty: parse_quote!(Dependencies),
                 dependencies: IndexMap::from_iter(vec![(
                     parse_quote!(service),
                     Rc::new(RefCell::new(Dependency {
+                        attrs: vec![],
                         sig: parse_quote!(fn service(&self, config: &Config) -> Service),
                         block: parse_quote!({ Service }),
                         is_async: false,
@@ -345,11 +360,13 @@ mod tests {
                 }
             ));
             let expected = Container {
+                attrs: vec![],
                 self_ty: parse_quote!(Dependencies),
                 dependencies: IndexMap::from_iter(vec![
                     (
                         parse_quote!(service),
                         Rc::new(RefCell::new(Dependency {
+                            attrs: vec![],
                             sig: parse_quote!(fn service(&self, config: Config) -> Service),
                             block: parse_quote!({ Service }),
                             is_async: false,
@@ -362,6 +379,7 @@ mod tests {
                     (
                         parse_quote!(config),
                         Rc::new(RefCell::new(Dependency {
+                            attrs: vec![],
                             sig: parse_quote!(async fn config(&self) -> Config),
                             block: parse_quote!({ Config }),
                             is_async: true,
