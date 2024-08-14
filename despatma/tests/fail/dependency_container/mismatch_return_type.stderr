@@ -1,0 +1,13 @@
+error[E0308]: arguments to this method are incorrect
+  --> tests/fail/dependency_container/mismatch_return_type.rs:24:8
+   |
+24 |     fn service(&self, config: u32, unit: Unit) -> Service {
+   |        ^^^^^^^        ------       ---- expected `Unit`, found `()`
+   |                       |
+   |                       expected `u32`, found `Config`
+   |
+note: method defined here
+  --> tests/fail/dependency_container/mismatch_return_type.rs:24:8
+   |
+24 |     fn service(&self, config: u32, unit: Unit) -> Service {
+   |        ^^^^^^^        -----------  ----------

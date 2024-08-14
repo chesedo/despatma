@@ -3,7 +3,7 @@
 //! [github]: https://img.shields.io/badge/github-8da0cb?style=for-the-badge&labelColor=555555&logo=github
 //! [crates-io]: https://img.shields.io/badge/crates.io-fc8d62?style=for-the-badge&labelColor=555555&logo=rust
 //! [docs-rs]: https://img.shields.io/badge/docs.rs-66c2a5?style=for-the-badge&labelColor=555555&logoColor=white&logo=data:image/svg+xml;base64,PHN2ZyByb2xlPSJpbWciIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDUxMiA1MTIiPjxwYXRoIGZpbGw9IiNmNWY1ZjUiIGQ9Ik00ODguNiAyNTAuMkwzOTIgMjE0VjEwNS41YzAtMTUtOS4zLTI4LjQtMjMuNC0zMy43bC0xMDAtMzcuNWMtOC4xLTMuMS0xNy4xLTMuMS0yNS4zIDBsLTEwMCAzNy41Yy0xNC4xIDUuMy0yMy40IDE4LjctMjMuNCAzMy43VjIxNGwtOTYuNiAzNi4yQzkuMyAyNTUuNSAwIDI2OC45IDAgMjgzLjlWMzk0YzAgMTMuNiA3LjcgMjYuMSAxOS45IDMyLjJsMTAwIDUwYzEwLjEgNS4xIDIyLjEgNS4xIDMyLjIgMGwxMDMuOS01MiAxMDMuOSA1MmMxMC4xIDUuMSAyMi4xIDUuMSAzMi4yIDBsMTAwLTUwYzEyLjItNi4xIDE5LjktMTguNiAxOS45LTMyLjJWMjgzLjljMC0xNS05LjMtMjguNC0yMy40LTMzLjd6TTM1OCAyMTQuOGwtODUgMzEuOXYtNjguMmw4NS0zN3Y3My4zek0xNTQgMTA0LjFsMTAyLTM4LjIgMTAyIDM4LjJ2LjZsLTEwMiA0MS40LTEwMi00MS40di0uNnptODQgMjkxLjFsLTg1IDQyLjV2LTc5LjFsODUtMzguOHY3NS40em0wLTExMmwtMTAyIDQxLjQtMTAyLTQxLjR2LS42bDEwMi0zOC4yIDEwMiAzOC4ydi42em0yNDAgMTEybC04NSA0Mi41di03OS4xbDg1LTM4Ljh2NzUuNHptMC0xMTJsLTEwMiA0MS40LTEwMi00MS40di0uNmwxMDItMzguMiAxMDIgMzguMnYuNnoiPjwvcGF0aD48L3N2Zz4K
-//! [workflow]: https://img.shields.io/github/workflow/status/chesedo/despatma/Rust?color=green&label=&labelColor=555555&logo=github%20actions&logoColor=white&style=for-the-badge
+//! [workflow]: https://img.shields.io/github/actions/workflow/status/chesedo/despatma/rust.yml?color=green&label=&labelColor=555555&logo=github%20actions&logoColor=white&style=for-the-badge
 //!
 //! Despatma is a collection of `des`ign `pat`tern `ma`cros (`despatma`).
 //! It aims to provide the most common implementations for design patterns at run-time.
@@ -13,18 +13,24 @@
 //! The following patterns are currently implemented:
 //! - [abstract_factory] - with the help of [interpolate_traits] macro
 //! - [visitor]
+//! - [dependency_container]
 //!
 //! [abstract_factory]: macro@self::abstract_factory
 //! [interpolate_traits]: macro@self::interpolate_traits
 //! [visitor]: macro@self::visitor
+//! [dependency_container]: macro@self::dependency_container
 mod abstract_factory;
+mod dependency_container;
 mod visitor;
 
 extern crate proc_macro;
 
+use dependency_container::Container;
 use proc_macro::TokenStream;
+use proc_macro_error::proc_macro_error;
+use quote::quote;
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, ItemTrait, Token};
+use syn::{parse_macro_input, ItemImpl, ItemTrait, Token};
 use tokenstream2_tmpl::Interpolate;
 
 use abstract_factory::AbstractFactoryAttribute;
@@ -696,4 +702,227 @@ pub fn visitor(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input!(tokens as VisitorFunction);
 
     input.expand().into()
+}
+
+/// ## Overview
+///
+/// The `dependency_container` macro simplifies dependency injection in Rust by automatically wiring dependencies based on an `impl` block. It creates a dependency container with public methods that handle the correct setup and wiring of dependencies.
+///
+/// ## Basic Usage
+///
+/// ```
+/// use despatma::dependency_container;
+///
+/// struct Config {
+///     port: u32,
+/// }
+///
+/// struct Service;
+///
+/// impl Service {
+///     pub fn new(port: u32) -> Self {
+///         Self
+///     }
+/// }
+///
+/// #[dependency_container]
+/// impl MyContainer {
+///     fn config(&self) -> Config {
+///         Config { port: 8080 }
+///     }
+///
+///     fn service(&self, config: Config) -> Service {
+///         Service::new(config.port)
+///     }
+/// }
+///
+/// fn main() {
+///     let container = MyContainer {};
+///     let service = container.service();
+/// }
+/// ```
+///
+/// In this example:
+/// - The macro creates a `MyContainer` struct based on the name in the `impl` block.
+/// - Public `config` and `service` methods are generated.
+/// - The `service` method is automatically wired to use the `config` method's output.
+///
+/// **Important**: The linking between dependencies works because the `config()` method has the same name as the `config` argument in the `service` method. This name matching is crucial for the auto-wiring to function correctly.
+///
+/// ## Advanced Features
+///
+/// ### Returning Traits
+///
+/// The `dependency_container` macro supports returning trait objects, enabling more flexible and testable code:
+///
+/// ```
+/// use despatma::dependency_container;
+///
+/// trait DataLayer {
+///     fn get_user_name(&self, id: u32) -> String;
+/// }
+///
+/// // Implementation details...
+/// # struct Sqlite;
+/// #
+/// # impl DataLayer for Sqlite {
+/// #     fn get_user_name(&self, id: u32) -> String {
+/// #          format!("User {}", id)
+/// #     }
+/// # }
+/// #
+/// # struct Service<D: DataLayer> {
+/// #     data_layer: D,
+/// # }
+/// #
+/// # impl<D: DataLayer> Service<D> {
+/// #     pub fn new(data_layer: D) -> Self {
+/// #         Self { data_layer }
+/// #     }
+/// # }
+///
+/// #[dependency_container]
+/// impl Dependencies {
+///     fn data_layer(&self) -> impl DataLayer {
+///         Sqlite
+///     }
+///
+///     fn service(&self, data_layer: impl DataLayer) -> Service<impl DataLayer> {
+///         Service::new(data_layer)
+///     }
+/// }
+/// ```
+///
+/// This approach allows for easier testing and swapping of implementations without changing the `service` method.
+///
+/// ### Runtime Abstractions
+///
+/// For runtime dependency switching, you can use `Box<dyn Trait>`:
+///
+/// ```
+/// use auto_impl::auto_impl;
+/// use despatma::dependency_container;
+///
+/// #[auto_impl(Box)]
+/// trait DataLayer {
+///     fn get_user_name(&self, id: u32) -> String;
+/// }
+///
+/// // Implementation details...
+/// # struct Config {
+/// #     use_sqlite: bool,
+/// # }
+/// #
+/// # struct Sqlite;
+/// #
+/// # impl DataLayer for Sqlite {
+/// #     fn get_user_name(&self, id: u32) -> String {
+/// #          format!("Sqlite User {}", id)
+/// #     }
+/// # }
+/// #
+/// # struct Postgres;
+/// #
+/// # impl DataLayer for Postgres {
+/// #     fn get_user_name(&self, id: u32) -> String {
+/// #         format!("Postgres User {}", id)
+/// #     }
+/// # }
+/// #
+/// # struct Service<D: DataLayer> {
+/// #     data_layer: D,
+/// # }
+/// #
+/// # impl<D: DataLayer> Service<D> {
+/// #     pub fn new(data_layer: D) -> Self {
+/// #         Self { data_layer }
+/// #     }
+/// # }
+///
+/// #[dependency_container]
+/// impl DependencyContainer {
+/// #   fn config(&self) -> Config {
+/// #       Config { use_sqlite: true }
+/// #   }
+/// #
+///     fn data_layer(&self, config: Config) -> impl DataLayer {
+///         let dl: Box<dyn DataLayer> = if config.use_sqlite {
+///             Box::new(Sqlite)
+///         } else {
+///             Box::new(Postgres)
+///         };
+///         dl
+///     }
+///     // Other methods...
+/// }
+/// ```
+///
+/// **Important**: To make this work:
+/// 1. Annotate the `DataLayer` trait with `#[auto_impl(Box)]`. This implements the `DataLayer` trait for `Box<dyn DataLayer>`.
+/// 2. Use `impl DataLayer` as the return type, but create a `Box<dyn DataLayer>` internally to handle different concrete types.
+///
+/// ### Async Dependencies
+///
+/// The macro supports async dependencies by automatically making parent dependencies async:
+///
+/// ```
+/// use despatma::dependency_container;
+/// # use std::time::Duration;
+/// # use tokio::time::sleep;
+///
+/// // Implementation details...
+/// # struct Config {
+/// #     port: u32,
+/// # }
+/// #
+/// # impl Config {
+/// #     async fn new() -> Self {
+/// #         sleep(Duration::from_secs(1)).await;
+/// #         Config { port: 8080 }
+/// #     }
+/// # }
+/// #
+/// # struct Service;
+/// #
+/// # impl Service {
+/// #     pub fn new(port: u32) -> Self {
+/// #         Service
+/// #     }
+/// # }
+///
+/// #[dependency_container]
+/// impl MyContainer {
+///     async fn config(&self) -> Config {
+///         Config::new().await
+///     }
+///
+///     fn service(&self, config: Config) -> Service {
+///         Service::new(config.port)
+///     }
+/// }
+/// ```
+///
+/// Note that the `service` method will be automatically made `async` by the macro to accommodate the async `config` dependency.
+///
+/// ## Considerations
+///
+/// - The macro determines wiring based on method names matching argument names.
+/// - When using runtime abstractions, ensure you're following the pattern shown in the `Box<dyn Trait>` example.
+/// - Async dependencies will cause parent dependencies to become async as well.
+/// - Consider the performance implications of excessive boxing or async calls in your dependency tree.
+///
+/// For more information on dependency injection in Rust, see this article on [Manual Dependency Injection in Rust](https://chesedo.me/blog/manual-dependency-injection-rust/).
+#[proc_macro_error]
+#[proc_macro_attribute]
+pub fn dependency_container(_tokens: TokenStream, impl_expr: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(impl_expr as ItemImpl);
+    let mut container = Container::from_item_impl(input);
+
+    container.validate();
+    container.update();
+
+    quote! {
+        #container
+    }
+    .into()
 }
