@@ -702,6 +702,214 @@ pub fn visitor(tokens: TokenStream) -> TokenStream {
     input.expand().into()
 }
 
+/// ## Overview
+///
+/// The `dependency_container` macro simplifies dependency injection in Rust by automatically wiring dependencies based on an `impl` block. It creates a dependency container with public methods that handle the correct setup and wiring of dependencies.
+///
+/// ## Basic Usage
+///
+/// ```
+/// use despatma::dependency_container;
+///
+/// struct Config {
+///     port: u32,
+/// }
+///
+/// struct Service;
+///
+/// impl Service {
+///     pub fn new(port: u32) -> Self {
+///         Self
+///     }
+/// }
+///
+/// #[dependency_container]
+/// impl MyContainer {
+///     fn config(&self) -> Config {
+///         Config { port: 8080 }
+///     }
+///
+///     fn service(&self, config: Config) -> Service {
+///         Service::new(config.port)
+///     }
+/// }
+///
+/// fn main() {
+///     let container = MyContainer {};
+///     let service = container.service();
+/// }
+/// ```
+///
+/// In this example:
+/// - The macro creates a `MyContainer` struct based on the name in the `impl` block.
+/// - Public `config` and `service` methods are generated.
+/// - The `service` method is automatically wired to use the `config` method's output.
+///
+/// **Important**: The linking between dependencies works because the `config()` method has the same name as the `config` argument in the `service` method. This name matching is crucial for the auto-wiring to function correctly.
+///
+/// ## Advanced Features
+///
+/// ### Returning Traits
+///
+/// The `dependency_container` macro supports returning trait objects, enabling more flexible and testable code:
+///
+/// ```
+/// use despatma::dependency_container;
+///
+/// trait DataLayer {
+///     fn get_user_name(&self, id: u32) -> String;
+/// }
+///
+/// // Implementation details...
+/// # struct Sqlite;
+/// #
+/// # impl DataLayer for Sqlite {
+/// #     fn get_user_name(&self, id: u32) -> String {
+/// #          format!("User {}", id)
+/// #     }
+/// # }
+/// #
+/// # struct Service<D: DataLayer> {
+/// #     data_layer: D,
+/// # }
+/// #
+/// # impl<D: DataLayer> Service<D> {
+/// #     pub fn new(data_layer: D) -> Self {
+/// #         Self { data_layer }
+/// #     }
+/// # }
+///
+/// #[dependency_container]
+/// impl Dependencies {
+///     fn data_layer(&self) -> impl DataLayer {
+///         Sqlite
+///     }
+///
+///     fn service(&self, data_layer: impl DataLayer) -> Service<impl DataLayer> {
+///         Service::new(data_layer)
+///     }
+/// }
+/// ```
+///
+/// This approach allows for easier testing and swapping of implementations without changing the `service` method.
+///
+/// ### Runtime Abstractions
+///
+/// For runtime dependency switching, you can use `Box<dyn Trait>`:
+///
+/// ```
+/// use auto_impl::auto_impl;
+/// use despatma::dependency_container;
+///
+/// #[auto_impl(Box)]
+/// trait DataLayer {
+///     fn get_user_name(&self, id: u32) -> String;
+/// }
+///
+/// // Implementation details...
+/// # struct Config {
+/// #     use_sqlite: bool,
+/// # }
+/// #
+/// # struct Sqlite;
+/// #
+/// # impl DataLayer for Sqlite {
+/// #     fn get_user_name(&self, id: u32) -> String {
+/// #          format!("Sqlite User {}", id)
+/// #     }
+/// # }
+/// #
+/// # struct Postgres;
+/// #
+/// # impl DataLayer for Postgres {
+/// #     fn get_user_name(&self, id: u32) -> String {
+/// #         format!("Postgres User {}", id)
+/// #     }
+/// # }
+/// #
+/// # struct Service<D: DataLayer> {
+/// #     data_layer: D,
+/// # }
+/// #
+/// # impl<D: DataLayer> Service<D> {
+/// #     pub fn new(data_layer: D) -> Self {
+/// #         Self { data_layer }
+/// #     }
+/// # }
+///
+/// #[dependency_container]
+/// impl DependencyContainer {
+/// #   fn config(&self) -> Config {
+/// #       Config { use_sqlite: true }
+/// #   }
+/// #
+///     fn data_layer(&self, config: Config) -> impl DataLayer {
+///         let dl: Box<dyn DataLayer> = if config.use_sqlite {
+///             Box::new(Sqlite)
+///         } else {
+///             Box::new(Postgres)
+///         };
+///         dl
+///     }
+///     // Other methods...
+/// }
+/// ```
+///
+/// **Important**: To make this work:
+/// 1. Annotate the `DataLayer` trait with `#[auto_impl(Box)]`. This implements the `DataLayer` trait for `Box<dyn DataLayer>`.
+/// 2. Use `impl DataLayer` as the return type, but create a `Box<dyn DataLayer>` internally to handle different concrete types.
+///
+/// ### Async Dependencies
+///
+/// The macro supports async dependencies by automatically making parent dependencies async:
+///
+/// ```
+/// use despatma::dependency_container;
+/// # use std::time::Duration;
+/// # use tokio::time::sleep;
+///
+/// // Implementation details...
+/// # struct Config {
+/// #     port: u32,
+/// # }
+/// #
+/// # impl Config {
+/// #     async fn new() -> Self {
+/// #         sleep(Duration::from_secs(1)).await;
+/// #         Config { port: 8080 }
+/// #     }
+/// # }
+/// #
+/// # struct Service;
+/// #
+/// # impl Service {
+/// #     pub fn new(port: u32) -> Self {
+/// #         Service
+/// #     }
+/// # }
+///
+/// #[dependency_container]
+/// impl MyContainer {
+///     async fn config(&self) -> Config {
+///         Config::new().await
+///     }
+///
+///     fn service(&self, config: Config) -> Service {
+///         Service::new(config.port)
+///     }
+/// }
+/// ```
+///
+/// Note that the `service` method will be automatically made `async` by the macro to accommodate the async `config` dependency.
+///
+/// ## Considerations
+///
+/// - The macro determines wiring based on method names matching argument names.
+/// - When using runtime abstractions, ensure you're following the pattern shown in the `Box<dyn Trait>` example.
+/// - Async dependencies will cause parent dependencies to become async as well.
+/// - Consider the performance implications of excessive boxing or async calls in your dependency tree.
+///
+/// For more information on dependency injection in Rust, see this article on [Manual Dependency Injection in Rust](https://chesedo.me/blog/manual-dependency-injection-rust/).
 #[proc_macro_error]
 #[proc_macro_attribute]
 pub fn dependency_container(_tokens: TokenStream, impl_expr: TokenStream) -> TokenStream {
