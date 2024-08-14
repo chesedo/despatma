@@ -33,3 +33,4 @@ pretty_assertions = { workspace = true }
 syn = { workspace = true, features = ["extra-traits"] }
 trybuild = "1.0"
 tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread", "time"] }
+auto_impl = "1.2.0"

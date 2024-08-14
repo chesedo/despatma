@@ -23,6 +23,115 @@ struct Dependency {
     dependencies: Vec<ChildDependency>,
 }
 
+impl Dependency {
+    fn create_dependency_fn(&self) -> (Ident, TokenStream) {
+        let Self {
+            sig,
+            block,
+            is_async: _,
+            dependencies: _,
+        } = self;
+        let Signature {
+            constness,
+            asyncness,
+            unsafety,
+            abi,
+            fn_token,
+            ident,
+            generics,
+            paren_token: _,
+            inputs,
+            variadic,
+            output,
+        } = sig;
+
+        let create_ident = Ident::new(&format!("create_{}", ident), ident.span());
+
+        let create_fn = quote! {
+            #constness #asyncness #unsafety #abi #fn_token #create_ident #generics (#inputs, #variadic) #output #block
+        };
+
+        (create_ident, create_fn)
+    }
+
+    fn dependency_fn(
+        &self,
+        create_ident: Ident,
+        container_dependencies: &IndexMap<Ident, Rc<RefCell<Dependency>>>,
+    ) -> TokenStream {
+        let Dependency {
+            sig,
+            block: _,
+            dependencies,
+            is_async,
+        } = self;
+        let Signature {
+            constness,
+            asyncness,
+            unsafety,
+            abi,
+            fn_token,
+            ident,
+            generics,
+            paren_token: _,
+            inputs: _,
+            variadic: _,
+            output,
+        } = sig;
+
+        let (create_dependencies, dependency_params): (Vec<_>, Vec<_>) = dependencies
+            .iter()
+            .map(|dep| {
+                let ChildDependency { ident, is_ref } = dep;
+
+                // The dependency might not exist if it was mispelt since we still try our best to generate the code
+                let is_async = container_dependencies
+                    .get(ident)
+                    .map(|d| d.borrow().is_async)
+                    .unwrap_or_default();
+
+                let param = if *is_ref {
+                    quote! { &#ident }
+                } else {
+                    quote! { #ident }
+                };
+
+                let awai = if is_async {
+                    Some(quote! { .await })
+                } else {
+                    None
+                };
+
+                (
+                    quote! {
+                        let #ident = self.#ident()#awai;
+                    },
+                    param,
+                )
+            })
+            .unzip();
+
+        let pub_asyncness = if *is_async {
+            Some(<Token![async]>::default())
+        } else {
+            None
+        };
+        let pub_await = if asyncness.is_some() {
+            Some(quote! { .await })
+        } else {
+            None
+        };
+
+        quote! {
+            pub #constness #pub_asyncness #unsafety #abi #fn_token #ident #generics(&self) #output {
+                #(#create_dependencies)*
+
+                self.#create_ident(#(#dependency_params),*)#pub_await
+            }
+        }
+    }
+}
+
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 struct ChildDependency {
     ident: Ident,
@@ -89,7 +198,6 @@ impl Container {
 
     pub fn update(&mut self) {
         let mut async_visitor = AsyncVisitor::new(self.dependencies.clone());
-
         async_visitor.visit_container_mut(self);
     }
 }
@@ -101,65 +209,14 @@ impl ToTokens for Container {
 
         let dependencies = self_dependencies.values().map(|dep| {
             let dep_ref = dep.borrow();
-            let Dependency {  sig, block, dependencies, is_async } = &*dep_ref;
-            let Signature {
-                constness,
-                asyncness,
-                unsafety,
-                abi,
-                fn_token,
-                ident,
-                generics,
-                paren_token: _,
-                inputs,
-                variadic,
-                output,
-            } = sig;
 
-            let create_ident = Ident::new(&format!("create_{}", ident), ident.span());
-            let (create_dependencies, dependency_params): (Vec<_>, Vec<_>) = dependencies.iter().map(|dep| {
-                let ChildDependency { ident, is_ref } = dep;
-
-                // The dependency might not exist if it was mispelt since we still try our best to generate the code
-                let is_async = self_dependencies.get(ident).map(|d| d.borrow().is_async).unwrap_or_default();
-
-                let param = if *is_ref {
-                    quote! { &#ident }
-                } else {
-                    quote! { #ident }
-                };
-
-                let awai = if is_async {
-                    Some(quote! { .await })
-                } else {
-                    None
-                };
-
-                (quote! {
-                    let #ident = self.#ident()#awai;
-                }, param)
-            }).unzip();
-
-            let pub_asyncness = if *is_async {
-                Some(<Token![async]>::default())
-            } else {
-                None
-            };
-            let pub_await = if asyncness.is_some() {
-                Some(quote! { .await })
-            } else {
-                None
-            };
-
+            let (create_ident, create_dependency_fn) = dep_ref.create_dependency_fn();
+            let dependency_fn = dep_ref.dependency_fn(create_ident, self_dependencies);
 
             quote! {
-                #constness #asyncness #unsafety #abi #fn_token #create_ident #generics (#inputs, #variadic) #output #block
+                #create_dependency_fn
 
-                pub #constness #pub_asyncness #unsafety #abi #fn_token #ident #generics(&self) #output {
-                    #(#create_dependencies)*
-
-                    self.#create_ident(#(#dependency_params),*)#pub_await
-                }
+                #dependency_fn
             }
         });
 
