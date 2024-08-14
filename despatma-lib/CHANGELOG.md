@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/chesedo/despatma/compare/despatma-lib-v0.1.1...despatma-lib-v0.2.0) - 2024-08-14
+
+### Other
+- update Cargo.toml dependencies
+
 ## [0.1.1](https://github.com/chesedo/despatma/compare/despatma-lib-v0.1.0...despatma-lib-v0.1.1) - 2024-08-09
 
 ### Other

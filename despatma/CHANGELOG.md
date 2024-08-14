@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/chesedo/despatma/compare/despatma-v0.1.1...despatma-v0.2.0) - 2024-08-14
+
+### Added
+- dependency_container ([#9](https://github.com/chesedo/despatma/pull/9))
+
+### Other
+- [**breaking**] change `Visitable` to use static dispatch instead ([#8](https://github.com/chesedo/despatma/pull/8))
+- update all docs to compile successfully ([#6](https://github.com/chesedo/despatma/pull/6))
+
 ## [0.1.1](https://github.com/chesedo/despatma/compare/despatma-v0.1.0...despatma-v0.1.1) - 2024-08-09
 
 ### Other
