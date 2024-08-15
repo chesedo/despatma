@@ -6,7 +6,7 @@ edition = "2021"
 description = "Design Pattern Macro for abstract factory"
 repository = "https://github.com/chesedo/despatma"
 license = "MIT"
-keywords = ["macro", "design", "patterns", "abstract factory"]
+keywords = ["macro", "design", "patterns", "abstract", "factory"]
 
 [lib]
 proc-macro = true

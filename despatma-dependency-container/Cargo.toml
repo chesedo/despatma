@@ -6,7 +6,7 @@ edition = "2021"
 description = "Design Pattern Macro for dependency container"
 repository = "https://github.com/chesedo/despatma"
 license = "MIT"
-keywords = ["macro", "design", "patterns", "dependency container", "dependency injection"]
+keywords = ["design", "patterns", "dependency", "container", "injection"]
 
 [lib]
 proc-macro = true
