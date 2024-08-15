@@ -5,7 +5,7 @@ use syn::Ident;
 
 use crate::container::Dependency;
 
-use super::VisitMut;
+use super::VisitorMut;
 
 /// Visitor used to determine if any child dependencies in the calltree is async. Because if any
 /// child dependencies are async, then the parent dependency must also be async. Which this
@@ -24,7 +24,7 @@ impl FixAsyncTree {
     }
 }
 
-impl VisitMut for FixAsyncTree {
+impl VisitorMut for FixAsyncTree {
     fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
         // We want to be efficient and not visit the same dependency multiple times
         if self.visited_dependencies.contains(&dependency.sig.ident) {
