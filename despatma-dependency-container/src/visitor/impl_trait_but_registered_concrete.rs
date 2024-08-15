@@ -7,7 +7,7 @@ use syn::{FnArg, Ident, Pat, PatType, ReturnType, Type, TypeImplTrait};
 
 use crate::container::Dependency;
 
-use super::Visit;
+use super::{ErrorVisitor, Visitor};
 
 /// Visitor to find any requested dependencies of a concrete type, while the registered dependency
 /// returns an `impl Trait`.
@@ -31,7 +31,7 @@ impl ImplTraitButRegisteredConcrete {
     }
 }
 
-impl Visit for ImplTraitButRegisteredConcrete {
+impl Visitor for ImplTraitButRegisteredConcrete {
     fn visit_dependency(&mut self, dependency: &Dependency) {
         let path_inputs = dependency
             .sig
@@ -70,7 +70,9 @@ impl Visit for ImplTraitButRegisteredConcrete {
             });
         }
     }
+}
 
+impl ErrorVisitor for ImplTraitButRegisteredConcrete {
     fn emit_errors(self) {
         let errors = self.errors;
 

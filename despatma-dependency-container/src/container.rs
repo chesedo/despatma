@@ -8,7 +8,9 @@ use syn::{
     Attribute, Block, FnArg, Ident, ImplItem, ImplItemFn, ItemImpl, Pat, Signature, Token, Type,
 };
 
-use crate::visitor::{CheckWiring, FixAsyncTree, ImplTraitButRegisteredConcrete, Visit, VisitMut};
+use crate::visitor::{
+    CheckWiring, ErrorVisitor, FixAsyncTree, ImplTraitButRegisteredConcrete, Visitor, VisitorMut,
+};
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {

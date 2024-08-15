@@ -5,78 +5,45 @@ mod fix_async_tree;
 mod impl_trait_but_registered_concrete;
 
 pub use check_wiring::CheckWiring;
+use despatma_visitor::{visitor, visitor_mut};
 pub use fix_async_tree::FixAsyncTree;
 pub use impl_trait_but_registered_concrete::ImplTraitButRegisteredConcrete;
 
+visitor!(
+    #[helper_tmpl = {
+        for dependency in container.dependencies.values() {
+            visitor.visit_dependency(&dependency.borrow());
+        }
+    }]
+    Container,
+    #[helper_tmpl = {
+        for child_dependency in &dependency.dependencies {
+            visitor.visit_child_dependency(child_dependency);
+        }
+    }]
+    Dependency,
+    ChildDependency,
+);
+
 /// A visitor used to validate the struct that will be turned into a dependency container.
 /// If the visitor found any errors then they should be emit in [emit_errors].
-pub trait Visit {
-    /// Visit the top level container which will be turned into a struct
-    fn visit_container(&mut self, container: &Container) {
-        visit_container(self, container);
-    }
-
-    /// Visit a dependency that was registered
-    fn visit_dependency(&mut self, dependency: &Dependency) {
-        visit_dependency(self, dependency);
-    }
-
-    /// Visit a dependency requested by a registered dependency
-    fn visit_child_dependency(&mut self, child_dependency: &ChildDependency) {
-        visit_child_dependency(self, child_dependency);
-    }
-
-    /// Emit any errors that were found during the visit
+pub trait ErrorVisitor: Visitor {
     fn emit_errors(self);
 }
 
-fn visit_container<V: Visit + ?Sized>(visitor: &mut V, container: &Container) {
-    for dependency in container.dependencies.values() {
-        visitor.visit_dependency(&dependency.borrow());
-    }
-}
-
-fn visit_dependency<V: Visit + ?Sized>(visitor: &mut V, dependency: &Dependency) {
-    for child_dependency in &dependency.dependencies {
-        visitor.visit_child_dependency(child_dependency);
-    }
-}
-
-fn visit_child_dependency<V: Visit + ?Sized>(
-    _visitor: &mut V,
-    _child_dependency: &ChildDependency,
-) {
-}
-
-/// A mutable visitor used to update any dependencies or their children
-pub trait VisitMut {
-    fn visit_container_mut(&mut self, container: &mut Container) {
-        visit_container_mut(self, container);
-    }
-
-    fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
-        visit_dependency_mut(self, dependency);
-    }
-
-    fn visit_child_dependency_mut(&mut self, child_dependency: &mut ChildDependency) {
-        visit_child_dependency_mut(self, child_dependency);
-    }
-}
-
-fn visit_container_mut<V: VisitMut + ?Sized>(visitor: &mut V, container: &mut Container) {
-    for dependency in container.dependencies.values_mut() {
-        visitor.visit_dependency_mut(&mut dependency.borrow_mut());
-    }
-}
-
-fn visit_dependency_mut<V: VisitMut + ?Sized>(visitor: &mut V, dependency: &mut Dependency) {
-    for child_dependency in &mut dependency.dependencies {
-        visitor.visit_child_dependency_mut(child_dependency);
-    }
-}
-
-fn visit_child_dependency_mut<V: VisitMut + ?Sized>(
-    _visitor: &mut V,
-    _child_dependency: &mut ChildDependency,
-) {
-}
+// A mutable visitor used to update any dependencies or their children
+visitor_mut!(
+    #[helper_tmpl = {
+        for dependency in container.dependencies.values_mut() {
+            visitor.visit_dependency_mut(&mut dependency.borrow_mut());
+        }
+    }]
+    Container,
+    #[helper_tmpl = {
+        for child_dependency in &mut dependency.dependencies {
+            visitor.visit_child_dependency_mut(child_dependency);
+        }
+    }]
+    Dependency,
+    ChildDependency,
+);

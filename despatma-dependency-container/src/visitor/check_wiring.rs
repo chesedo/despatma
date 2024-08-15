@@ -4,7 +4,7 @@ use syn::Ident;
 
 use crate::container::ChildDependency;
 
-use super::Visit;
+use super::{ErrorVisitor, Visitor};
 
 /// This visitor is responsible for checking if all dependencies have been registered in the container.
 /// So if `a` has a dependency on `b`, this visitor will check if `b` has been registered in the container.
@@ -32,7 +32,7 @@ impl CheckWiring {
     }
 }
 
-impl Visit for CheckWiring {
+impl Visitor for CheckWiring {
     fn visit_child_dependency(&mut self, child_dependency: &ChildDependency) {
         if !self.dependencies.contains(&child_dependency.ident) {
             let best_match =
@@ -44,7 +44,9 @@ impl Visit for CheckWiring {
             });
         }
     }
+}
 
+impl ErrorVisitor for CheckWiring {
     fn emit_errors(self) {
         let Self { errors, .. } = self;
 
