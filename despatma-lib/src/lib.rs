@@ -10,7 +10,6 @@
 //! - `extra-traits` — Debug, Eq, PartialEq, Hash impls for all syntax tree types.
 
 mod annotated_type;
-pub mod extensions;
 mod key_value;
 mod options_attribute;
 mod simple_type;

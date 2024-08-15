@@ -670,6 +670,9 @@ pub use despatma_abstract_factory::interpolate_traits;
 /// 1. Least generic and also needs to know the method name.
 pub use despatma_visitor::visitor;
 
+/// Like [visitor] but allows the mutation of each item visited
+pub use despatma_visitor::visitor_mut;
+
 /// The `dependency_container` macro simplifies dependency injection in Rust by automatically wiring dependencies based on an `impl` block. It creates a dependency container with public methods that handle the correct setup and wiring of dependencies.
 ///
 /// ## Basic Usage
