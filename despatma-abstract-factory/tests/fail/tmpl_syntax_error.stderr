@@ -1,0 +1,27 @@
+error[E0599]: no function or associated item named `new` found for struct `GnomeButton` in the current scope
+  --> tests/fail/tmpl_syntax_error.rs:35:28
+   |
+7  |   struct GnomeButton {}
+   |   ------------------ function or associated item `new` not found for this struct
+...
+32 |   #[interpolate_traits(Button => GnomeButton)]
+   |  ________________________________-
+33 | | impl Factory<dyn TRAIT> for GnomeFactory {
+34 | |     fn create(&self) -> Box<dyn TRAIT> {
+35 | |         Box::new(CONCRETE::new())
+   | |                           -^^^ function or associated item not found in `GnomeButton`
+   | |___________________________|
+   |
+
+error[E0308]: mismatched types
+  --> tests/fail/tmpl_syntax_error.rs:40:25
+   |
+40 |     fn create(&self) -> Box<TRAIT> {
+   |        ------           ^^^^^^^^^^ expected `Box<Window>`, found `()`
+   |        |
+   |        implicitly returns `()` as its body has no tail or `return` expression
+41 |         Box::new(CONCRETE::create());
+   |                                     - help: remove this semicolon to return this value
+   |
+   = note: expected struct `Box<Window>`
+           found unit type `()`

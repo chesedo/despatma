@@ -1,0 +1,13 @@
+error: expected identifier
+  --> tests/fail/double_options_attr.rs:14:5
+   |
+14 |     #[no_default]
+   |     ^
+
+warning: unused imports: `Circle`, `Cube`, and `Rectangle`
+ --> tests/fail/double_options_attr.rs:5:23
+  |
+5 | use library::shapes::{Circle, Cube, Rectangle};
+  |                       ^^^^^^  ^^^^  ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default

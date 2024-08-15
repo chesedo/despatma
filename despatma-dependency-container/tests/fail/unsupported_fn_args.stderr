@@ -1,0 +1,47 @@
+error: This argument type is not supported
+  --> tests/fail/unsupported_fn_args.rs:11:22
+   |
+11 |     fn config(&self, x!(): u32, [first, ..]: &[i32], [eerste, tweede]: &[i32; 2]) -> Config {
+   |                      ^^^^
+
+error: This argument type is not supported
+  --> tests/fail/unsupported_fn_args.rs:11:33
+   |
+11 |     fn config(&self, x!(): u32, [first, ..]: &[i32], [eerste, tweede]: &[i32; 2]) -> Config {
+   |                                 ^^^^^^^^^^^
+
+error: This argument type is not supported
+  --> tests/fail/unsupported_fn_args.rs:11:54
+   |
+11 |     fn config(&self, x!(): u32, [first, ..]: &[i32], [eerste, tweede]: &[i32; 2]) -> Config {
+   |                                                      ^^^^^^^^^^^^^^^^
+
+error: This argument type is not supported
+  --> tests/fail/unsupported_fn_args.rs:15:23
+   |
+15 |     fn service(&self, Config { port }: Config, (a, b): (i32, i32)) -> Service {
+   |                       ^^^^^^^^^^^^^^^
+
+error: This argument type is not supported
+  --> tests/fail/unsupported_fn_args.rs:15:48
+   |
+15 |     fn service(&self, Config { port }: Config, (a, b): (i32, i32)) -> Service {
+   |                                                ^^^^^^
+
+error: This argument type is not supported
+  --> tests/fail/unsupported_fn_args.rs:19:20
+   |
+19 |     fn task(&self, Service(port): Service, _: i32) -> Task {
+   |                    ^^^^^^^^^^^^^
+
+error: This argument type is not supported
+  --> tests/fail/unsupported_fn_args.rs:19:44
+   |
+19 |     fn task(&self, Service(port): Service, _: i32) -> Task {
+   |                                            ^
+
+error[E0433]: failed to resolve: use of undeclared type `DependencyContainer`
+  --> tests/fail/unsupported_fn_args.rs:25:21
+   |
+25 |     let container = DependencyContainer::new();
+   |                     ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DependencyContainer`

@@ -15,27 +15,10 @@
 //! - [visitor]
 //! - [dependency_container]
 //!
-//! [abstract_factory]: macro@self::abstract_factory
-//! [interpolate_traits]: macro@self::interpolate_traits
-//! [visitor]: macro@self::visitor
-//! [dependency_container]: macro@self::dependency_container
-mod abstract_factory;
-mod dependency_container;
-mod visitor;
-
-extern crate proc_macro;
-
-use dependency_container::Container;
-use proc_macro::TokenStream;
-use proc_macro_error::proc_macro_error;
-use quote::quote;
-use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, ItemImpl, ItemTrait, Token};
-use tokenstream2_tmpl::Interpolate;
-
-use abstract_factory::AbstractFactoryAttribute;
-use despatma_lib::TraitSpecifier;
-use visitor::VisitorFunction;
+//! [abstract_factory]: crate::abstract_factory
+//! [interpolate_traits]: crate::interpolate_traits
+//! [visitor]: crate::visitor
+//! [dependency_container]: crate::dependency_container
 
 /// Turns a `trait` into an Abstract Factory.
 /// The trait can optionally have super-traits.
@@ -122,13 +105,7 @@ use visitor::VisitorFunction;
 ///     fn resize(&self, width: u32, height: u32);
 /// }
 /// ```
-#[proc_macro_attribute]
-pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenStream {
-    let mut input = parse_macro_input!(trait_expr as ItemTrait);
-    let attributes = parse_macro_input!(tokens as AbstractFactoryAttribute);
-
-    attributes.expand(&mut input).into()
-}
+pub use despatma_abstract_factory::abstract_factory;
 
 /// Expands a list of [despatma_lib::TraitSpecifier] elements over a template.
 /// The `TRAIT` and `CONCRETE` markers in the template will be replaced with each passed in element.
@@ -302,13 +279,7 @@ pub fn abstract_factory(tokens: TokenStream, trait_expr: TokenStream) -> TokenSt
 /// ```
 ///
 /// [abstract_factory]: macro@self::abstract_factory
-#[proc_macro_attribute]
-pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> TokenStream {
-    let attributes =
-        parse_macro_input!(tokens with Punctuated::<TraitSpecifier, Token![,]>::parse_terminated);
-
-    attributes.interpolate(concrete_impl.into()).into()
-}
+pub use despatma_abstract_factory::interpolate_traits;
 
 /// Creates an abstract visitor for a list of elements.
 ///
@@ -697,15 +668,8 @@ pub fn interpolate_traits(tokens: TokenStream, concrete_impl: TokenStream) -> To
 /// 1. This is the preferred way as it will work with any visitor and there is no need to remember the visit method's name.
 /// 1. Needs to know the helper function name and is less generic. But it might work with any visitor.
 /// 1. Least generic and also needs to know the method name.
-#[proc_macro]
-pub fn visitor(tokens: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(tokens as VisitorFunction);
+pub use despatma_visitor::visitor;
 
-    input.expand().into()
-}
-
-/// ## Overview
-///
 /// The `dependency_container` macro simplifies dependency injection in Rust by automatically wiring dependencies based on an `impl` block. It creates a dependency container with public methods that handle the correct setup and wiring of dependencies.
 ///
 /// ## Basic Usage
@@ -736,10 +700,8 @@ pub fn visitor(tokens: TokenStream) -> TokenStream {
 ///     }
 /// }
 ///
-/// fn main() {
-///     let container = MyContainer {};
-///     let service = container.service();
-/// }
+/// let container = MyContainer {};
+/// let service = container.service();
 /// ```
 ///
 /// In this example:
@@ -912,17 +874,4 @@ pub fn visitor(tokens: TokenStream) -> TokenStream {
 /// - Consider the performance implications of excessive boxing or async calls in your dependency tree.
 ///
 /// For more information on dependency injection in Rust, see this article on [Manual Dependency Injection in Rust](https://chesedo.me/blog/manual-dependency-injection-rust/).
-#[proc_macro_error]
-#[proc_macro_attribute]
-pub fn dependency_container(_tokens: TokenStream, impl_expr: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(impl_expr as ItemImpl);
-    let mut container = Container::from_item_impl(input);
-
-    container.validate();
-    container.update();
-
-    quote! {
-        #container
-    }
-    .into()
-}
+pub use despatma_dependency_container::dependency_container;

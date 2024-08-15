@@ -1,0 +1,28 @@
+[package]
+name = "despatma-dependency-container"
+version.workspace = true
+authors = ["chesedo <pieter@chesedo.me>"]
+edition = "2021"
+description = "Design Pattern Macro for dependency container"
+repository = "https://github.com/chesedo/despatma"
+license = "MIT"
+keywords = ["macro", "design", "patterns", "dependency container", "dependency injection"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+indexmap = "2.4.0"
+proc-macro-error = "1.0.4"
+proc-macro2.workspace = true
+quote.workspace = true
+strsim = "0.11.1"
+syn = { workspace = true, features = ["full"] }
+
+[dev-dependencies]
+auto_impl = "1.2.0"
+macrotest.workspace = true
+pretty_assertions.workspace = true
+syn = { workspace = true, features = ["extra-traits"] }
+tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread", "time"] }
+trybuild.workspace = true
