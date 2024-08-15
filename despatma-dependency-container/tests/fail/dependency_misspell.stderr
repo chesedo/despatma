@@ -1,0 +1,14 @@
+error: The 'canfi' dependency has not been registered
+
+         = help: Did you mean `config`?
+
+  --> tests/fail/dependency_misspell.rs:20:23
+   |
+20 |     fn service(&self, canfi: Config) -> Service {
+   |                       ^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `DependencyContainer`
+  --> tests/fail/dependency_misspell.rs:26:21
+   |
+26 |     let container = DependencyContainer::new();
+   |                     ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DependencyContainer`

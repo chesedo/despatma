@@ -1,0 +1,26 @@
+[package]
+name = "despatma-visitor"
+version.workspace = true
+authors = ["chesedo <pieter@chesedo.me>"]
+edition = "2021"
+description = "Design Pattern Macro for visitor"
+repository = "https://github.com/chesedo/despatma"
+license = "MIT"
+keywords = ["macro", "design", "patterns", "visitor"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+despatma-lib = { version = "0.2.0", path = "../despatma-lib" }
+proc-macro2.workspace = true
+quote.workspace = true
+syn.workspace = true
+
+[dev-dependencies]
+despatma-lib = { path = "../despatma-lib", features = ["extra-traits"] }
+despatma-test-helpers = { path = "../despatma-test-helpers" }
+macrotest.workspace = true
+pretty_assertions.workspace = true
+syn = { workspace = true, features = ["extra-traits"] }
+trybuild.workspace = true

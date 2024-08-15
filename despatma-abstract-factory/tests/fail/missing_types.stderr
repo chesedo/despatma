@@ -1,0 +1,5 @@
+error[E0433]: failed to resolve: use of undeclared type `GnomeButton`
+  --> tests/fail/missing_types.rs:21:32
+   |
+21 | #[interpolate_traits(Button => GnomeButton)]
+   |                                ^^^^^^^^^^^ use of undeclared type `GnomeButton`

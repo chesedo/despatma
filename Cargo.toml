@@ -5,13 +5,18 @@ version = "0.2.0"
 
 members = [
     "despatma",
+    "despatma-abstract-factory",
+    "despatma-dependency-container",
     "despatma-lib",
-    "despatma-test-helpers"
+    "despatma-test-helpers",
+    "despatma-visitor"
 ]
 
 [workspace.dependencies]
+macrotest = "1.0"
 pretty_assertions = "1.0"
 proc-macro2 = "1.0"
 quote = "1.0"
 syn = "2.0"
 tokenstream2-tmpl = "0.1.2"
+trybuild = "1.0"

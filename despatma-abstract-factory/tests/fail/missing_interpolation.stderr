@@ -1,0 +1,39 @@
+error[E0277]: the trait bound `GnomeFactory: Factory<Window>` is not satisfied
+  --> tests/fail/missing_interpolation.rs:18:29
+   |
+18 | impl AbstractGuiFactory for GnomeFactory {}
+   |                             ^^^^^^^^^^^^ the trait `Factory<Window>` is not implemented for `GnomeFactory`
+   |
+help: this trait has no implementations, consider adding one
+  --> tests/fail/missing_interpolation.rs:8:1
+   |
+8  | pub trait Factory<T: Element + ?Sized> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `AbstractGuiFactory`
+  --> tests/fail/missing_interpolation.rs:13:1
+   |
+13 | #[abstract_factory(Factory, dyn Button, Window)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `AbstractGuiFactory`
+14 | pub trait AbstractGuiFactory {}
+   |           ------------------ required by a bound in this trait
+   = note: this error originates in the attribute macro `abstract_factory` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0277]: the trait bound `GnomeFactory: Factory<(dyn Button + 'static)>` is not satisfied
+  --> tests/fail/missing_interpolation.rs:18:29
+   |
+18 | impl AbstractGuiFactory for GnomeFactory {}
+   |                             ^^^^^^^^^^^^ the trait `Factory<(dyn Button + 'static)>` is not implemented for `GnomeFactory`
+   |
+help: this trait has no implementations, consider adding one
+  --> tests/fail/missing_interpolation.rs:8:1
+   |
+8  | pub trait Factory<T: Element + ?Sized> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: required by a bound in `AbstractGuiFactory`
+  --> tests/fail/missing_interpolation.rs:13:1
+   |
+13 | #[abstract_factory(Factory, dyn Button, Window)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `AbstractGuiFactory`
+14 | pub trait AbstractGuiFactory {}
+   |           ------------------ required by a bound in this trait
+   = note: this error originates in the attribute macro `abstract_factory` (in Nightly builds, run with -Z macro-backtrace for more info)

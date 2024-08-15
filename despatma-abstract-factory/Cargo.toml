@@ -1,0 +1,26 @@
+[package]
+name = "despatma-abstract-factory"
+version.workspace = true
+authors = ["chesedo <pieter@chesedo.me>"]
+edition = "2021"
+description = "Design Pattern Macro for abstract factory"
+repository = "https://github.com/chesedo/despatma"
+license = "MIT"
+keywords = ["macro", "design", "patterns", "abstract factory"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+despatma-lib = { version = "0.2.0", path = "../despatma-lib" }
+proc-macro2.workspace = true
+quote.workspace = true
+syn = { workspace = true, features = ["full"] }
+tokenstream2-tmpl.workspace = true
+
+[dev-dependencies]
+despatma-test-helpers = { path = "../despatma-test-helpers" }
+macrotest.workspace = true
+pretty_assertions.workspace = true
+syn = { workspace = true, features = ["extra-traits"] }
+trybuild.workspace = true
