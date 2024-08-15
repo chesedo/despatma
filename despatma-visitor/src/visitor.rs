@@ -1,4 +1,5 @@
-use despatma_lib::{extensions::ToLowercase, AnnotatedType, KeyValue, SimpleType};
+use convert_case::{Case, Casing};
+use despatma_lib::{AnnotatedType, KeyValue, SimpleType};
 use proc_macro2::{Span, TokenStream, TokenTree};
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream, Result};
@@ -49,7 +50,10 @@ impl VisitorFunction {
 
         // Loop over each type given
         for t in self.types.iter() {
-            let elem_name = t.inner_type.ident.to_lowercase();
+            let elem_name = Ident::new(
+                &t.inner_type.ident.to_string().to_case(Case::Snake),
+                t.inner_type.ident.span(),
+            );
             let elem_type = &t.inner_type;
             let fn_name = format_ident!("visit_{}", elem_name);
             let options = Options::new(&t.attrs.options);
