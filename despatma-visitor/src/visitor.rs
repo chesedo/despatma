@@ -118,6 +118,84 @@ impl VisitorFunction {
             #(#visitables)*
         }
     }
+
+    /// Expand the visitor model into a mutable implementation
+    pub fn expand_mut(&self) -> TokenStream {
+        // Store each of the three parts
+        let mut trait_functions: Vec<TokenStream> = Vec::new();
+        let mut helpers: Vec<TokenStream> = Vec::new();
+        let mut visitables: Vec<TokenStream> = Vec::new();
+
+        // Loop over each type given
+        for t in self.types.iter() {
+            let elem_name = Ident::new(
+                &t.inner_type.ident.to_string().to_case(Case::Snake),
+                t.inner_type.ident.span(),
+            );
+            let elem_type = &t.inner_type;
+            let fn_name = format_ident!("visit_{}_mut", elem_name);
+            let options = Options::new(&t.attrs.options);
+
+            // Get trait function
+            if options.no_default {
+                trait_functions.push(quote! {
+                    fn #fn_name(&mut self, #elem_name: &mut #elem_type);
+                })
+            } else {
+                trait_functions.push(quote! {
+                    fn #fn_name(&mut self, #elem_name: &mut #elem_type) {
+                        #fn_name(self, #elem_name)
+                    }
+                })
+            };
+
+            // Get helper function
+            if options.has_helper {
+                if let Some(inner) = options.helper_tmpl {
+                    helpers.push(quote! {
+                        pub fn #fn_name<V>(visitor: &mut V, #elem_name: &mut #elem_type)
+                        where
+                            V: VisitorMut + ?Sized,
+                        {
+                            #inner
+                        }
+                    });
+                } else {
+                    let unused_elem_name = format_ident!("_{}", elem_name);
+                    helpers.push(quote! {
+                        pub fn #fn_name<V>(_visitor: &mut V, #unused_elem_name: &mut #elem_type)
+                        where
+                            V: VisitorMut + ?Sized,
+                        {
+                        }
+                    });
+                }
+            };
+
+            // Make visitable
+            visitables.push(quote! {
+                impl VisitableMut for #elem_type {
+                    fn apply(&mut self, visitor: &mut impl VisitorMut) {
+                        visitor.#fn_name(self);
+                    }
+                }
+            });
+        }
+
+        // Built complete visitor implementation
+        quote! {
+            pub trait VisitorMut {
+                #(#trait_functions)*
+            }
+
+            #(#helpers)*
+
+            trait VisitableMut {
+                fn apply(&mut self, visitor: &mut impl VisitorMut);
+            }
+            #(#visitables)*
+        }
+    }
 }
 
 /// Private struct for dissecting each option passed to a visitor type

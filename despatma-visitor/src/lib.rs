@@ -12,3 +12,10 @@ pub fn visitor(tokens: TokenStream) -> TokenStream {
 
     input.expand().into()
 }
+
+#[proc_macro]
+pub fn visitor_mut(tokens: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(tokens as VisitorFunction);
+
+    input.expand_mut().into()
+}
