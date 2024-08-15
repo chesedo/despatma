@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/chesedo/despatma/compare/despatma-lib-v0.2.0...despatma-lib-v0.3.0) - 2024-08-15
+
+### Added
+- [**breaking**] visitor_mut ([#13](https://github.com/chesedo/despatma/pull/13))
+
 ## [0.2.0](https://github.com/chesedo/despatma/compare/despatma-lib-v0.1.1...despatma-lib-v0.2.0) - 2024-08-14
 
 ### Other
