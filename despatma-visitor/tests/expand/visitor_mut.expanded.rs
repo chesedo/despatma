@@ -29,26 +29,26 @@ pub fn visit_circle_mut<V>(_visitor: &mut V, _circle: &mut dyn Circle)
 where
     V: VisitorMut + ?Sized,
 {}
-trait VisitableMut {
-    fn apply(&mut self, visitor: &mut impl VisitorMut);
+pub trait VisitableMut {
+    fn apply_mut(&mut self, visitor: &mut impl VisitorMut);
 }
 impl VisitableMut for dyn Arc {
-    fn apply(&mut self, visitor: &mut impl VisitorMut) {
+    fn apply_mut(&mut self, visitor: &mut impl VisitorMut) {
         visitor.visit_arc_mut(self);
     }
 }
 impl VisitableMut for Rectangle {
-    fn apply(&mut self, visitor: &mut impl VisitorMut) {
+    fn apply_mut(&mut self, visitor: &mut impl VisitorMut) {
         visitor.visit_rectangle_mut(self);
     }
 }
 impl VisitableMut for dyn Point {
-    fn apply(&mut self, visitor: &mut impl VisitorMut) {
+    fn apply_mut(&mut self, visitor: &mut impl VisitorMut) {
         visitor.visit_point_mut(self);
     }
 }
 impl VisitableMut for dyn Circle {
-    fn apply(&mut self, visitor: &mut impl VisitorMut) {
+    fn apply_mut(&mut self, visitor: &mut impl VisitorMut) {
         visitor.visit_circle_mut(self);
     }
 }
