@@ -147,7 +147,7 @@ impl Dependency {
             fn_token,
             ident,
             generics,
-            paren_token: _,
+            paren_token,
             inputs,
             variadic,
             output,
@@ -155,8 +155,21 @@ impl Dependency {
 
         let create_ident = Ident::new(&format!("create_{}", ident), ident.span());
 
+        // Do the same thing `syn` does for the paren_token
+        let mut params = TokenStream::new();
+
+        paren_token.surround(&mut params, |tokens| {
+            inputs.to_tokens(tokens);
+            if let Some(variadic) = &variadic {
+                if !inputs.empty_or_trailing() {
+                    <Token![,]>::default().to_tokens(tokens);
+                }
+                variadic.to_tokens(tokens);
+            }
+        });
+
         let create_fn = quote! {
-            #constness #asyncness #unsafety #abi #fn_token #create_ident #generics (#inputs, #variadic) #output #block
+            #constness #asyncness #unsafety #abi #fn_token #create_ident #generics #params #output #block
         };
 
         (create_ident, create_fn)
