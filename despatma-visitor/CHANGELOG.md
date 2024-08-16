@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/chesedo/despatma/compare/despatma-visitor-v0.3.0...despatma-visitor-v0.3.1) - 2024-08-16
+
+### Other
+- *(vi)* make the `Visitable*` traits public ([#15](https://github.com/chesedo/despatma/pull/15))
+
 ## [0.3.0](https://github.com/chesedo/despatma/compare/despatma-visitor-v0.2.0...despatma-visitor-v0.3.0) - 2024-08-15
 
 ### Added
