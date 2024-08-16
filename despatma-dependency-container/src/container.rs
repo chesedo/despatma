@@ -209,14 +209,14 @@ impl Dependency {
                     // Need to do some weird stuff to get the compile errors for type mismatches to appear correctly
                     // Feel free to update this if the mismatch error can be improved
                     let ident_request_ty_spanned =
-                        Ident::new(&format!("{}", ident), request_ty_span.clone());
-                    quote_spanned! { registered_ty_span.clone() => &#ident_request_ty_spanned }
+                        Ident::new(&format!("{}", ident), *request_ty_span);
+                    quote_spanned! { *registered_ty_span => &#ident_request_ty_spanned }
                 } else {
                     // Need to do some weird stuff to get the compile errors for type mismatches to appear correctly
                     // Feel free to update this if the mismatch error can be improved
                     let ident_output_spanned =
-                        Ident::new(&format!("{}", ident), registered_ty_span.clone());
-                    quote_spanned! { request_ty_span.clone() => #ident_output_spanned }
+                        Ident::new(&format!("{}", ident), *registered_ty_span);
+                    quote_spanned! { *request_ty_span => #ident_output_spanned }
                 };
 
                 let await_key = if is_async {
