@@ -27,7 +27,7 @@ pub fn expand() {
     // Else macrotest might fail and we won't know why
     drop(t);
 
-    macrotest::expand("tests/expand/dependency_container/*.rs");
+    macrotest::expand("tests/expand/*.rs");
 }
 
 #[test]
