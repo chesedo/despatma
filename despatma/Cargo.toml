@@ -9,10 +9,10 @@ license = "MIT"
 keywords = ["macro", "design", "patterns"]
 
 [dependencies]
-despatma-abstract-factory = { version = "0.3.0", path = "../despatma-abstract-factory" }
-despatma-dependency-container = { version = "0.3.0", path = "../despatma-dependency-container" }
-despatma-lib = { version = "0.3.0", path = "../despatma-lib" }
-despatma-visitor = { version = "0.3.0", path = "../despatma-visitor" }
+despatma-abstract-factory = { version = "0.3.1", path = "../despatma-abstract-factory" }
+despatma-dependency-container = { version = "0.3.1", path = "../despatma-dependency-container" }
+despatma-lib = { version = "0.3.1", path = "../despatma-lib" }
+despatma-visitor = { version = "0.3.1", path = "../despatma-visitor" }
 
 [dev-dependencies]
 auto_impl = "1.2.0"
