@@ -9,7 +9,7 @@ pub fn visit_gnome_3_window<V>(_visitor: &mut V, _gnome_3_window: &Gnome3Window)
 where
     V: Visitor + ?Sized,
 {}
-trait Visitable {
+pub trait Visitable {
     fn apply(&self, visitor: &mut impl Visitor);
 }
 impl Visitable for Gnome3Window {

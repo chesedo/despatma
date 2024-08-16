@@ -29,7 +29,7 @@ pub fn visit_circle<V>(_visitor: &mut V, _circle: &dyn Circle)
 where
     V: Visitor + ?Sized,
 {}
-trait Visitable {
+pub trait Visitable {
     fn apply(&self, visitor: &mut impl Visitor);
 }
 impl Visitable for dyn Arc {

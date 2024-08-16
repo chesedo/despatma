@@ -37,7 +37,7 @@ pub fn visit_cube<V>(_visitor: &mut V, _cube: &dyn Cube)
 where
     V: Visitor + ?Sized,
 {}
-trait Visitable {
+pub trait Visitable {
     fn apply(&self, visitor: &mut impl Visitor);
 }
 impl Visitable for dyn Circle {

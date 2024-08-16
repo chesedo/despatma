@@ -112,7 +112,7 @@ impl VisitorFunction {
 
             #(#helpers)*
 
-            trait Visitable {
+            pub trait Visitable {
                 fn apply(&self, visitor: &mut impl Visitor);
             }
             #(#visitables)*
@@ -175,7 +175,7 @@ impl VisitorFunction {
             // Make visitable
             visitables.push(quote! {
                 impl VisitableMut for #elem_type {
-                    fn apply(&mut self, visitor: &mut impl VisitorMut) {
+                    fn apply_mut(&mut self, visitor: &mut impl VisitorMut) {
                         visitor.#fn_name(self);
                     }
                 }
@@ -190,8 +190,8 @@ impl VisitorFunction {
 
             #(#helpers)*
 
-            trait VisitableMut {
-                fn apply(&mut self, visitor: &mut impl VisitorMut);
+            pub trait VisitableMut {
+                fn apply_mut(&mut self, visitor: &mut impl VisitorMut);
             }
             #(#visitables)*
         }
@@ -358,7 +358,7 @@ mod tests {
                visitor.visit_button(&window.button);
             }
 
-            trait Visitable {
+            pub trait Visitable {
                 fn apply(&self, visitor: &mut impl Visitor);
             }
             impl Visitable for Button {
