@@ -1,10 +1,14 @@
 error[E0308]: arguments to this method are incorrect
   --> tests/fail/mismatch_return_type.rs:24:8
    |
+18 |     fn config(&self) -> Config {
+   |                         ------ expected `u32`, found `Config`
+...
+22 |     fn unit(&self) {}
+   |        ---- expected `Unit`, found `()`
+23 |
 24 |     fn service(&self, config: u32, unit: Unit) -> Service {
-   |        ^^^^^^^        ------       ---- expected `Unit`, found `()`
-   |                       |
-   |                       expected `u32`, found `Config`
+   |        ^^^^^^^
    |
 note: method defined here
   --> tests/fail/mismatch_return_type.rs:24:8
