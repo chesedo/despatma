@@ -1,15 +1,17 @@
 use std::{cell::RefCell, rc::Rc};
 
 use indexmap::IndexMap;
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use proc_macro_error::emit_error;
-use quote::{quote, ToTokens};
+use quote::{quote, quote_spanned, ToTokens};
 use syn::{
-    Attribute, Block, FnArg, Ident, ImplItem, ImplItemFn, ItemImpl, Pat, Signature, Token, Type,
+    spanned::Spanned, Attribute, Block, FnArg, Ident, ImplItem, ImplItemFn, ItemImpl, Pat,
+    Signature, Token, Type,
 };
 
 use crate::visitor::{
-    CheckWiring, ErrorVisitor, FixAsyncTree, ImplTraitButRegisteredConcrete, Visitor, VisitorMut,
+    CheckWiring, ErrorVisitor, FixAsyncTree, ImplTraitButRegisteredConcrete, SetOutputSpans,
+    Visitable, VisitableMut,
 };
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -52,21 +54,24 @@ impl Container {
     fn validate_wiring(&self) {
         let mut wiring_visitor = CheckWiring::new(self.dependencies.keys().cloned().collect());
 
-        wiring_visitor.visit_container(self);
+        self.apply(&mut wiring_visitor);
         wiring_visitor.emit_errors();
     }
 
     fn validate_rpit_requesting_concrete(&self) {
         let mut rpit_requesting_concrete =
             ImplTraitButRegisteredConcrete::new(self.dependencies.clone());
-        rpit_requesting_concrete.visit_container(self);
+        self.apply(&mut rpit_requesting_concrete);
         rpit_requesting_concrete.emit_errors();
     }
 
     /// Update the container to fix any issues
     pub fn update(&mut self) {
         let mut async_visitor = FixAsyncTree::new(self.dependencies.clone());
-        async_visitor.visit_container_mut(self);
+        self.apply_mut(&mut async_visitor);
+
+        let mut set_output_span = SetOutputSpans::new(self.dependencies.clone());
+        self.apply_mut(&mut set_output_span);
     }
 }
 
@@ -186,7 +191,12 @@ impl Dependency {
         let (create_dependencies, dependency_params): (Vec<_>, Vec<_>) = dependencies
             .iter()
             .map(|child_dependency| {
-                let ChildDependency { ident, is_ref } = child_dependency;
+                let ChildDependency {
+                    ident,
+                    is_ref,
+                    request_ty_span,
+                    registered_ty_span,
+                } = child_dependency;
 
                 // The dependency might not exist if it was mispelt since we still try our best to generate the code.
                 // So defaulting to false
@@ -196,9 +206,17 @@ impl Dependency {
                     .unwrap_or_default();
 
                 let param = if *is_ref {
-                    quote! { &#ident }
+                    // Need to do some weird stuff to get the compile errors for type mismatches to appear correctly
+                    // Feel free to update this if the mismatch error can be improved
+                    let ident_request_ty_spanned =
+                        Ident::new(&format!("{}", ident), request_ty_span.clone());
+                    quote_spanned! { registered_ty_span.clone() => &#ident_request_ty_spanned }
                 } else {
-                    quote! { #ident }
+                    // Need to do some weird stuff to get the compile errors for type mismatches to appear correctly
+                    // Feel free to update this if the mismatch error can be improved
+                    let ident_output_spanned =
+                        Ident::new(&format!("{}", ident), registered_ty_span.clone());
+                    quote_spanned! { request_ty_span.clone() => #ident_output_spanned }
                 };
 
                 let await_key = if is_async {
@@ -237,11 +255,24 @@ impl Dependency {
     }
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub struct ChildDependency {
     pub ident: Ident,
     pub is_ref: bool,
+    pub request_ty_span: Span,
+    pub registered_ty_span: Span,
 }
+
+// Manual impl since [Span] doesn't implement PartialEq
+#[cfg(test)]
+impl PartialEq for ChildDependency {
+    fn eq(&self, other: &Self) -> bool {
+        self.ident == other.ident && self.is_ref == other.is_ref
+    }
+}
+
+#[cfg(test)]
+impl Eq for ChildDependency {}
 
 impl ChildDependency {
     fn from_impl_item_fn(impl_item_fn: &ImplItemFn) -> Vec<Self> {
@@ -262,6 +293,8 @@ impl ChildDependency {
                     Some(Self {
                         ident,
                         is_ref: matches!(pat_type.ty.as_ref(), Type::Reference(_)),
+                        request_ty_span: pat_type.ty.span(),
+                        registered_ty_span: Span::call_site(),
                     })
                 }
             })
@@ -328,6 +361,8 @@ mod tests {
                         dependencies: vec![ChildDependency {
                             ident: parse_quote!(config),
                             is_ref: false,
+                            request_ty_span: Span::call_site(),
+                            registered_ty_span: Span::call_site(),
                         }],
                     })),
                 )]),
@@ -358,6 +393,8 @@ mod tests {
                         dependencies: vec![ChildDependency {
                             ident: parse_quote!(config),
                             is_ref: true,
+                            request_ty_span: Span::call_site(),
+                            registered_ty_span: Span::call_site(),
                         }],
                     })),
                 )]),
@@ -392,6 +429,8 @@ mod tests {
                             dependencies: vec![ChildDependency {
                                 ident: parse_quote!(config),
                                 is_ref: false,
+                                request_ty_span: Span::call_site(),
+                                registered_ty_span: Span::call_site(),
                             }],
                         })),
                     ),

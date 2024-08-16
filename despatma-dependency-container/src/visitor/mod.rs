@@ -3,11 +3,13 @@ use crate::container::{ChildDependency, Container, Dependency};
 mod check_wiring;
 mod fix_async_tree;
 mod impl_trait_but_registered_concrete;
+mod set_output_spans;
 
 pub use check_wiring::CheckWiring;
 use despatma_visitor::{visitor, visitor_mut};
 pub use fix_async_tree::FixAsyncTree;
 pub use impl_trait_but_registered_concrete::ImplTraitButRegisteredConcrete;
+pub use set_output_spans::SetOutputSpans;
 
 visitor!(
     #[helper_tmpl = {
