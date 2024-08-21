@@ -5,7 +5,7 @@ use proc_macro2::{Span, TokenStream};
 use proc_macro_error::emit_error;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::{
-    spanned::Spanned, Attribute, Block, FnArg, Ident, ImplItem, ImplItemFn, ItemImpl, Pat,
+    spanned::Spanned, Attribute, Block, FnArg, Ident, ImplItem, ImplItemFn, ItemImpl, Meta, Pat,
     Signature, Token, Type,
 };
 
@@ -115,18 +115,55 @@ pub struct Dependency {
     pub sig: Signature,
     pub block: Block,
     pub is_async: bool,
+    pub lifetime: Lifetime,
     pub dependencies: Vec<ChildDependency>,
 }
 
+#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+pub enum Lifetime {
+    Transient,
+    Scoped,
+    Singleton,
+}
+
 impl Dependency {
-    fn from_impl_item_fn(impl_item_fn: ImplItemFn) -> Self {
+    fn from_impl_item_fn(mut impl_item_fn: ImplItemFn) -> Self {
         let dependencies = ChildDependency::from_impl_item_fn(&impl_item_fn);
+        let mut lifetime = Lifetime::Transient;
+
+        impl_item_fn.attrs.retain(|attr| {
+            let Meta::Path(ref path) = attr.meta else {
+                return true;
+            };
+
+            if path.segments.len() == 1 {
+                match path.segments[0].ident.to_string().as_str() {
+                    "Transient" => {
+                        lifetime = Lifetime::Transient;
+                        false
+                    }
+                    "Scoped" => {
+                        lifetime = Lifetime::Scoped;
+                        false
+                    }
+
+                    "Singleton" => {
+                        lifetime = Lifetime::Singleton;
+                        false
+                    }
+                    _ => true,
+                }
+            } else {
+                true
+            }
+        });
 
         Self {
             attrs: impl_item_fn.attrs,
             is_async: impl_item_fn.sig.asyncness.is_some(),
             sig: impl_item_fn.sig,
             block: impl_item_fn.block,
+            lifetime,
             dependencies,
         }
     }
@@ -137,6 +174,7 @@ impl Dependency {
             sig,
             block,
             is_async: _,
+            lifetime: _,
             dependencies: _,
         } = self;
         let Signature {
@@ -185,6 +223,7 @@ impl Dependency {
             sig,
             block: _,
             is_async,
+            lifetime: _,
             dependencies,
         } = self;
         let Signature {
@@ -344,6 +383,7 @@ mod tests {
                         sig: parse_quote!(fn config(&self) -> Config),
                         block: parse_quote!({ Config }),
                         is_async: false,
+                        lifetime: Lifetime::Transient,
                         dependencies: vec![],
                     })),
                 )]),
@@ -371,6 +411,7 @@ mod tests {
                         sig: parse_quote!(fn service(&self, config: Config) -> Service),
                         block: parse_quote!({ Service }),
                         is_async: false,
+                        lifetime: Lifetime::Transient,
                         dependencies: vec![ChildDependency {
                             ident: parse_quote!(config),
                             is_ref: false,
@@ -403,6 +444,7 @@ mod tests {
                         sig: parse_quote!(fn service(&self, config: &Config) -> Service),
                         block: parse_quote!({ Service }),
                         is_async: false,
+                        lifetime: Lifetime::Transient,
                         dependencies: vec![ChildDependency {
                             ident: parse_quote!(config),
                             is_ref: true,
@@ -439,6 +481,7 @@ mod tests {
                             sig: parse_quote!(fn service(&self, config: Config) -> Service),
                             block: parse_quote!({ Service }),
                             is_async: false,
+                            lifetime: Lifetime::Transient,
                             dependencies: vec![ChildDependency {
                                 ident: parse_quote!(config),
                                 is_ref: false,
@@ -454,6 +497,85 @@ mod tests {
                             sig: parse_quote!(async fn config(&self) -> Config),
                             block: parse_quote!({ Config }),
                             is_async: true,
+                            lifetime: Lifetime::Transient,
+                            dependencies: vec![],
+                        })),
+                    ),
+                ]),
+            };
+
+            assert_eq!(container, expected);
+        }
+
+        #[test]
+        fn with_lifetime() {
+            let container = Container::from_item_impl(parse_quote!(
+                impl DependencyContainer {
+                    #[Singleton]
+                    fn singleton(&self) -> Singleton {
+                        Singleton
+                    }
+
+                    #[Scoped]
+                    fn scoped(&self) -> Scoped {
+                        Scoped
+                    }
+
+                    #[Transient]
+                    fn transient(&self) -> Transient {
+                        Transient
+                    }
+
+                    fn default(&self) -> Default {
+                        Default
+                    }
+                }
+            ));
+            let expected = Container {
+                attrs: vec![],
+                self_ty: parse_quote!(DependencyContainer),
+                dependencies: IndexMap::from_iter(vec![
+                    (
+                        parse_quote!(singleton),
+                        Rc::new(RefCell::new(Dependency {
+                            attrs: vec![],
+                            sig: parse_quote!(fn singleton(&self) -> Singleton),
+                            block: parse_quote!({ Singleton }),
+                            is_async: false,
+                            lifetime: Lifetime::Singleton,
+                            dependencies: vec![],
+                        })),
+                    ),
+                    (
+                        parse_quote!(scoped),
+                        Rc::new(RefCell::new(Dependency {
+                            attrs: vec![],
+                            sig: parse_quote!(fn scoped(&self) -> Scoped),
+                            block: parse_quote!({ Scoped }),
+                            is_async: false,
+                            lifetime: Lifetime::Scoped,
+                            dependencies: vec![],
+                        })),
+                    ),
+                    (
+                        parse_quote!(transient),
+                        Rc::new(RefCell::new(Dependency {
+                            attrs: vec![],
+                            sig: parse_quote!(fn transient(&self) -> Transient),
+                            block: parse_quote!({ Transient }),
+                            is_async: false,
+                            lifetime: Lifetime::Transient,
+                            dependencies: vec![],
+                        })),
+                    ),
+                    (
+                        parse_quote!(default),
+                        Rc::new(RefCell::new(Dependency {
+                            attrs: vec![],
+                            sig: parse_quote!(fn default(&self) -> Default),
+                            block: parse_quote!({ Default }),
+                            is_async: false,
+                            lifetime: Lifetime::Transient,
                             dependencies: vec![],
                         })),
                     ),
