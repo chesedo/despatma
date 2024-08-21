@@ -18,7 +18,7 @@ impl DependencyContainer {
         Config { port: 8080 }
     }
 
-    fn service(&self, config: Config) -> Service {
+    fn service(&self, config: &Config) -> Service {
         Service::new(config.port)
     }
 }

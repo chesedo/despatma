@@ -17,6 +17,9 @@ impl DependencyContainer {
     fn new() -> Self {
         Self
     }
+    pub fn new_scope(&self) -> Self {
+        Self
+    }
     async fn create_config(&self) -> Config {
         sleep(Duration::from_millis(10)).await;
         Config { port: 8080 }

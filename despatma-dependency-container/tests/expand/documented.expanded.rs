@@ -13,6 +13,9 @@ impl DependencyContainer {
     fn new() -> Self {
         Self
     }
+    pub fn new_scope(&self) -> Self {
+        Self
+    }
     fn create_service(&self) -> Service {
         Service::new()
     }

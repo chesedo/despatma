@@ -81,6 +81,77 @@ impl ToTokens for Container {
         let self_ty = &self.self_ty;
         let self_dependencies = &self.dependencies;
 
+        let singleton_and_scoped_dependencies: Vec<_> = self_dependencies
+            .values()
+            .filter(|dep| {
+                matches!(
+                    dep.borrow().lifetime,
+                    Lifetime::Singleton | Lifetime::Scoped
+                )
+            })
+            .collect();
+
+        let fields = if singleton_and_scoped_dependencies.is_empty() {
+            quote! {;}
+        } else {
+            let fields = singleton_and_scoped_dependencies.iter().map(|dep| {
+                let dep_ref = dep.borrow();
+                let ident = &dep_ref.sig.ident;
+                let ty = match &dep_ref.sig.output {
+                    syn::ReturnType::Default => todo!("handle default output for struct fields"),
+                    syn::ReturnType::Type(_, ty) => ty,
+                };
+
+                quote! {
+                    #ident: std::rc::Rc<std::cell::OnceCell<#ty>>,
+                }
+            });
+
+            quote! {
+                {
+                    #(#fields)*
+                }
+            }
+        };
+
+        let fields_contructors = if singleton_and_scoped_dependencies.is_empty() {
+            quote! {}
+        } else {
+            let fields = singleton_and_scoped_dependencies.iter().map(|dep| {
+                let dep_ref = dep.borrow();
+                let ident = &dep_ref.sig.ident;
+
+                quote! {
+                    #ident: Default::default(),
+                }
+            });
+
+            quote! {
+                {
+                    #(#fields)*
+                }
+            }
+        };
+
+        let new_scope_contructors = if singleton_and_scoped_dependencies.is_empty() {
+            quote! {}
+        } else {
+            let fields = singleton_and_scoped_dependencies.iter().map(|dep| {
+                let dep_ref = dep.borrow();
+                let ident = &dep_ref.sig.ident;
+
+                quote! {
+                    #ident: self.#ident.clone(),
+                }
+            });
+
+            quote! {
+                {
+                    #(#fields)*
+                }
+            }
+        };
+
         let dependencies = self_dependencies.values().map(|dep| {
             let dep_ref = dep.borrow();
 
@@ -96,11 +167,15 @@ impl ToTokens for Container {
 
         tokens.extend(quote! {
             #(#self_attrs)*
-            struct #self_ty;
+            struct #self_ty #fields
 
             impl #self_ty {
                 fn new() -> Self {
-                    Self
+                    Self #fields_contructors
+                }
+
+                pub fn new_scope(&self) -> Self {
+                    Self #new_scope_contructors
                 }
 
                 #(#dependencies)*
@@ -223,7 +298,7 @@ impl Dependency {
             sig,
             block: _,
             is_async,
-            lifetime: _,
+            lifetime,
             dependencies,
         } = self;
         let Signature {
@@ -257,7 +332,14 @@ impl Dependency {
                     .map(|d| d.borrow().is_async)
                     .unwrap_or_default();
 
-                let param = if *is_ref {
+                // The dependency might not exist if it was mispelt since we still try our best to generate the code.
+                // So defaulting to true
+                let is_transient = !container_dependencies
+                    .get(ident)
+                    .map(|d| matches!(d.borrow().lifetime, Lifetime::Scoped | Lifetime::Singleton))
+                    .unwrap_or_default();
+
+                let param = if *is_ref && is_transient {
                     // Need to do some weird stuff to get the compile errors for type mismatches to appear correctly
                     // Feel free to update this if the mismatch error can be improved
                     let ident_request_ty_spanned =
@@ -296,12 +378,35 @@ impl Dependency {
             None
         };
 
+        let create_call = quote! {
+            self.#create_ident(#(#dependency_params),*)#await_key
+        };
+
+        let final_call = match lifetime {
+            Lifetime::Transient => create_call,
+            Lifetime::Scoped | Lifetime::Singleton => {
+                quote! {
+                    self.#ident.get_or_init(|| #create_call)
+                }
+            }
+        };
+
+        let final_output = match output {
+            syn::ReturnType::Default => todo!("handle default output for pub fn"),
+            syn::ReturnType::Type(arrow, ty) => match lifetime {
+                Lifetime::Transient => quote! { #arrow #ty },
+                Lifetime::Scoped | Lifetime::Singleton => {
+                    quote! { #arrow &#ty }
+                }
+            },
+        };
+
         quote! {
             #(#attrs)*
-            pub #constness #async_key #unsafety #abi #fn_token #ident #generics(&self) #output {
+            pub #constness #async_key #unsafety #abi #fn_token #ident #generics(&self) #final_output {
                 #(#create_dependencies)*
 
-                self.#create_ident(#(#dependency_params),*)#await_key
+                #final_call
             }
         }
     }

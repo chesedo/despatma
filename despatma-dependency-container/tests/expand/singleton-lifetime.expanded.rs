@@ -10,18 +10,25 @@ impl Service {
         Self
     }
 }
-struct DependencyContainer;
+struct DependencyContainer {
+    config: std::rc::Rc<std::cell::OnceCell<Config>>,
+}
 impl DependencyContainer {
     fn new() -> Self {
-        Self
+        Self { config: Default::default() }
+    }
+    pub fn new_scope(&self) -> Self {
+        Self {
+            config: self.config.clone(),
+        }
     }
     fn create_config(&self) -> Config {
         Config { port: 8080 }
     }
-    pub fn config(&self) -> Config {
-        self.create_config()
+    pub fn config(&self) -> &Config {
+        self.config.get_or_init(|| self.create_config())
     }
-    fn create_service(&self, config: Config) -> Service {
+    fn create_service(&self, config: &Config) -> Service {
         Service::new(config.port)
     }
     pub fn service(&self) -> Service {

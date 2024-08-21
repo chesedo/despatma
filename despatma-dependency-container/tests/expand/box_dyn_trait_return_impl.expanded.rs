@@ -29,6 +29,9 @@ impl DependencyContainer {
     fn new() -> Self {
         Self
     }
+    pub fn new_scope(&self) -> Self {
+        Self
+    }
     fn create_config(&self) -> Config {
         Config { port: 8080 }
     }

@@ -15,6 +15,9 @@ impl Dependencies {
     fn new() -> Self {
         Self
     }
+    pub fn new_scope(&self) -> Self {
+        Self
+    }
     fn create_configuration(&self) -> Configuration {
         Configuration { port: 8080 }
     }
