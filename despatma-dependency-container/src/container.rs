@@ -89,9 +89,10 @@ impl ToTokens for Container {
                     Lifetime::Singleton | Lifetime::Scoped
                 )
             })
+            .cloned()
             .collect();
 
-        let fields = if singleton_and_scoped_dependencies.is_empty() {
+        let struct_fields = if singleton_and_scoped_dependencies.is_empty() {
             quote! {;}
         } else {
             let fields = singleton_and_scoped_dependencies.iter().map(|dep| {
@@ -178,7 +179,7 @@ impl ToTokens for Container {
 
         tokens.extend(quote! {
             #(#self_attrs)*
-            struct #self_ty #fields
+            struct #self_ty #struct_fields
 
             impl #self_ty {
                 fn new() -> Self {
@@ -218,6 +219,7 @@ impl Dependency {
         let dependencies = ChildDependency::from_impl_item_fn(&impl_item_fn);
         let mut lifetime = Lifetime::Transient;
 
+        // Remove all lifetime attributes
         impl_item_fn.attrs.retain(|attr| {
             let Meta::Path(ref path) = attr.meta else {
                 return true;
@@ -268,7 +270,7 @@ impl Dependency {
             block,
             is_async: _,
             lifetime: _,
-            ty: _,
+            ty,
             dependencies: _,
         } = self;
         let Signature {
@@ -282,7 +284,7 @@ impl Dependency {
             paren_token,
             inputs,
             variadic,
-            output,
+            output: _,
         } = sig;
 
         let create_ident = Ident::new(&format!("create_{}", ident), ident.span());
@@ -301,7 +303,7 @@ impl Dependency {
         });
 
         let create_fn = quote! {
-            #constness #asyncness #unsafety #abi #fn_token #create_ident #generics #params #output #block
+            #constness #asyncness #unsafety #abi #fn_token #create_ident #generics #params -> #ty #block
         };
 
         (create_ident, create_fn)
