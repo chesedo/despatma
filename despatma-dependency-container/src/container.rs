@@ -98,9 +98,16 @@ impl ToTokens for Container {
                 let dep_ref = dep.borrow();
                 let ident = &dep_ref.sig.ident;
                 let ty = &dep_ref.ty;
+                let wrapper_ty = match dep_ref.lifetime {
+                    Lifetime::Singleton => quote! { std::rc::Rc<std::cell::OnceCell<#ty>> },
+                    Lifetime::Scoped => quote! { std::cell::OnceCell<#ty> },
+                    Lifetime::Transient => {
+                        unreachable!("we filtered for only singleton and scoped dependencies")
+                    }
+                };
 
                 quote! {
-                    #ident: std::rc::Rc<std::cell::OnceCell<#ty>>,
+                    #ident: #wrapper_ty,
                 }
             });
 
@@ -136,9 +143,16 @@ impl ToTokens for Container {
             let fields = singleton_and_scoped_dependencies.iter().map(|dep| {
                 let dep_ref = dep.borrow();
                 let ident = &dep_ref.sig.ident;
+                let init = match dep_ref.lifetime {
+                    Lifetime::Singleton => quote! { self.#ident.clone() },
+                    Lifetime::Scoped => quote! { Default::default() },
+                    Lifetime::Transient => {
+                        unreachable!("we filtered for only singleton and scoped dependencies")
+                    }
+                };
 
                 quote! {
-                    #ident: self.#ident.clone(),
+                    #ident: #init,
                 }
             });
 

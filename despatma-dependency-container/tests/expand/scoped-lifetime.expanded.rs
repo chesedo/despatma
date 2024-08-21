@@ -6,23 +6,21 @@ impl Service {
     fn new(port: u32) -> Self {
         {
             ::std::io::_print(
-                format_args!("Service (singleton config) started on port {0}\n", port),
+                format_args!("Service (scoped config) started on port {0}\n", port),
             );
         };
         Self
     }
 }
 struct DependencyContainer {
-    config: std::rc::Rc<std::cell::OnceCell<Config>>,
+    config: std::cell::OnceCell<Config>,
 }
 impl DependencyContainer {
     fn new() -> Self {
         Self { config: Default::default() }
     }
     pub fn new_scope(&self) -> Self {
-        Self {
-            config: self.config.clone(),
-        }
+        Self { config: Default::default() }
     }
     fn create_config(&self) -> Config {
         Config { port: 8080 }

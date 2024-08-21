@@ -6,14 +6,14 @@ struct Service;
 
 impl Service {
     fn new(port: u32) -> Self {
-        println!("Service (singleton config) started on port {}", port);
+        println!("Service (scoped config) started on port {}", port);
         Self
     }
 }
 
 #[despatma_dependency_container::dependency_container]
 impl DependencyContainer {
-    #[Singleton]
+    #[Scoped]
     fn config(&self) -> Config {
         Config { port: 8080 }
     }
