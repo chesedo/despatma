@@ -92,13 +92,27 @@ impl ToTokens for Container {
             .cloned()
             .collect();
 
+        let lifetime_generic = if self_dependencies.values().any(|d| {
+            let d_ref = d.borrow();
+            d_ref.is_boxed && matches!(d_ref.lifetime, Lifetime::Singleton | Lifetime::Scoped)
+        }) {
+            quote! { <'a> }
+        } else {
+            quote! {}
+        };
+
         let struct_fields = if singleton_and_scoped_dependencies.is_empty() {
             quote! {;}
         } else {
             let fields = singleton_and_scoped_dependencies.iter().map(|dep| {
                 let dep_ref = dep.borrow();
                 let ident = &dep_ref.sig.ident;
-                let ty = &dep_ref.ty;
+                let ty = if dep_ref.is_boxed {
+                    let ty = &dep_ref.ty;
+                    &parse_quote! { std::boxed::Box<#ty + 'a> }
+                } else {
+                    &dep_ref.ty
+                };
                 let wrapper_ty = match dep_ref.lifetime {
                     Lifetime::Singleton => quote! { std::rc::Rc<std::cell::OnceCell<#ty>> },
                     Lifetime::Scoped => quote! { std::cell::OnceCell<#ty> },
@@ -179,9 +193,9 @@ impl ToTokens for Container {
 
         tokens.extend(quote! {
             #(#self_attrs)*
-            struct #self_ty #struct_fields
+            struct #self_ty #lifetime_generic #struct_fields
 
-            impl #self_ty {
+            impl #lifetime_generic #self_ty #lifetime_generic {
                 fn new() -> Self {
                     Self #fields_contructors
                 }
@@ -202,6 +216,7 @@ pub struct Dependency {
     pub sig: Signature,
     pub block: Block,
     pub is_async: bool,
+    pub is_boxed: bool,
     pub lifetime: Lifetime,
     pub ty: Type,
     pub dependencies: Vec<ChildDependency>,
@@ -252,9 +267,36 @@ impl Dependency {
             ReturnType::Default => parse_quote! { () },
         };
 
+        let (is_boxed, ty) = if let Type::Path(ref path) = ty {
+            if let Some(last_segment) = path.path.segments.last() {
+                if last_segment.ident == "Box" {
+                    match &last_segment.arguments {
+                        syn::PathArguments::AngleBracketed(generics) => {
+                            if generics.args.len() == 1 {
+                                match &generics.args[0] {
+                                    syn::GenericArgument::Type(ty) => (true, ty.clone()),
+                                    _ => todo!(),
+                                }
+                            } else {
+                                todo!()
+                            }
+                        }
+                        _ => todo!(),
+                    }
+                } else {
+                    (false, ty)
+                }
+            } else {
+                todo!()
+            }
+        } else {
+            (false, ty)
+        };
+
         Self {
             attrs: impl_item_fn.attrs,
             is_async: impl_item_fn.sig.asyncness.is_some(),
+            is_boxed,
             sig: impl_item_fn.sig,
             block: impl_item_fn.block,
             lifetime,
@@ -269,6 +311,7 @@ impl Dependency {
             sig,
             block,
             is_async: _,
+            is_boxed,
             lifetime: _,
             ty,
             dependencies: _,
@@ -302,6 +345,12 @@ impl Dependency {
             }
         });
 
+        let ty = if *is_boxed {
+            quote! { std::boxed::Box<#ty + '_> }
+        } else {
+            quote! { #ty }
+        };
+
         let create_fn = quote! {
             #constness #asyncness #unsafety #abi #fn_token #create_ident #generics #params -> #ty #block
         };
@@ -319,6 +368,7 @@ impl Dependency {
             sig,
             block: _,
             is_async,
+            is_boxed,
             lifetime,
             ty,
             dependencies,
@@ -413,10 +463,16 @@ impl Dependency {
             }
         };
 
+        let ty = if *is_boxed {
+            quote! { std::boxed::Box<#ty + '_> }
+        } else {
+            quote! { #ty }
+        };
+
         let final_output = match lifetime {
             Lifetime::Transient => quote! { -> #ty },
             Lifetime::Scoped | Lifetime::Singleton => {
-                quote! { -> &#ty }
+                    quote! { -> &#ty }
             }
         };
 
@@ -507,6 +563,7 @@ mod tests {
                         sig: parse_quote!(fn config(&self) -> Config),
                         block: parse_quote!({ Config }),
                         is_async: false,
+                        is_boxed: false,
                         lifetime: Lifetime::Transient,
                         ty: parse_quote!(Config),
                         dependencies: vec![],
@@ -536,6 +593,7 @@ mod tests {
                         sig: parse_quote!(fn service(&self, config: Config) -> Service),
                         block: parse_quote!({ Service }),
                         is_async: false,
+                        is_boxed: false,
                         lifetime: Lifetime::Transient,
                         ty: parse_quote!(Service),
                         dependencies: vec![ChildDependency {
@@ -570,6 +628,7 @@ mod tests {
                         sig: parse_quote!(fn service(&self, config: &Config) -> Service),
                         block: parse_quote!({ Service }),
                         is_async: false,
+                        is_boxed: false,
                         lifetime: Lifetime::Transient,
                         ty: parse_quote!(Service),
                         dependencies: vec![ChildDependency {
@@ -608,6 +667,7 @@ mod tests {
                             sig: parse_quote!(fn service(&self, config: Config) -> Service),
                             block: parse_quote!({ Service }),
                             is_async: false,
+                            is_boxed: false,
                             lifetime: Lifetime::Transient,
                             ty: parse_quote!(Service),
                             dependencies: vec![ChildDependency {
@@ -625,6 +685,7 @@ mod tests {
                             sig: parse_quote!(async fn config(&self) -> Config),
                             block: parse_quote!({ Config }),
                             is_async: true,
+                            is_boxed: false,
                             lifetime: Lifetime::Transient,
                             ty: parse_quote!(Config),
                             dependencies: vec![],
@@ -671,6 +732,7 @@ mod tests {
                             sig: parse_quote!(fn singleton(&self) -> Singleton),
                             block: parse_quote!({ Singleton }),
                             is_async: false,
+                            is_boxed: false,
                             lifetime: Lifetime::Singleton,
                             ty: parse_quote!(Singleton),
                             dependencies: vec![],
@@ -683,6 +745,7 @@ mod tests {
                             sig: parse_quote!(fn scoped(&self) -> Scoped),
                             block: parse_quote!({ Scoped }),
                             is_async: false,
+                            is_boxed: false,
                             lifetime: Lifetime::Scoped,
                             ty: parse_quote!(Scoped),
                             dependencies: vec![],
@@ -695,6 +758,7 @@ mod tests {
                             sig: parse_quote!(fn transient(&self) -> Transient),
                             block: parse_quote!({ Transient }),
                             is_async: false,
+                            is_boxed: false,
                             lifetime: Lifetime::Transient,
                             ty: parse_quote!(Transient),
                             dependencies: vec![],
@@ -707,8 +771,59 @@ mod tests {
                             sig: parse_quote!(fn default(&self) -> Default),
                             block: parse_quote!({ Default }),
                             is_async: false,
+                            is_boxed: false,
                             lifetime: Lifetime::Transient,
                             ty: parse_quote!(Default),
+                            dependencies: vec![],
+                        })),
+                    ),
+                ]),
+            };
+
+            assert_eq!(container, expected);
+        }
+
+        #[test]
+        fn with_lifetime_boxed() {
+            let container = Container::from_item_impl(parse_quote!(
+                impl DependencyContainer {
+                    #[Singleton]
+                    fn singleton(&self) -> Box<dyn DAL> {
+                        Box::new(Postgres)
+                    }
+
+                    fn dal(&self) -> std::boxed::Box<dyn DAL> {
+                        Box::new(Sqlite)
+                    }
+                }
+            ));
+            let expected = Container {
+                attrs: vec![],
+                self_ty: parse_quote!(DependencyContainer),
+                dependencies: IndexMap::from_iter(vec![
+                    (
+                        parse_quote!(singleton),
+                        Rc::new(RefCell::new(Dependency {
+                            attrs: vec![],
+                            sig: parse_quote!(fn singleton(&self) -> Box<dyn DAL>),
+                            block: parse_quote!({ Box::new(Postgres) }),
+                            is_async: false,
+                            is_boxed: true,
+                            lifetime: Lifetime::Singleton,
+                            ty: parse_quote!(dyn DAL),
+                            dependencies: vec![],
+                        })),
+                    ),
+                    (
+                        parse_quote!(dal),
+                        Rc::new(RefCell::new(Dependency {
+                            attrs: vec![],
+                            sig: parse_quote!(fn dal(&self) -> std::boxed::Box<dyn DAL>),
+                            block: parse_quote!({ Box::new(Sqlite) }),
+                            is_async: false,
+                            is_boxed: true,
+                            lifetime: Lifetime::Transient,
+                            ty: parse_quote!(dyn DAL),
                             dependencies: vec![],
                         })),
                     ),

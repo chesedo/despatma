@@ -7,6 +7,9 @@ const _: () = {
     extern crate alloc;
     impl<T: DAL + ?::core::marker::Sized> DAL for alloc::boxed::Box<T> {}
 };
+const _: () = {
+    impl<'a, T: 'a + DAL + ?::core::marker::Sized> DAL for &'a T {}
+};
 struct PostgresDAL;
 impl DAL for PostgresDAL {}
 struct SQLiteDAL;
@@ -18,19 +21,24 @@ impl<D: DAL> Service<D> {
     fn new(port: u32, dal: D) -> Self {
         {
             ::std::io::_print(
-                format_args!("Box dyn Trait service started on port {0}\n", port),
+                format_args!(
+                    "Box dyn Trait singleton lifetime service started on port {0}\n",
+                    port,
+                ),
             );
         };
         Self { dal }
     }
 }
-struct DependencyContainer;
-impl DependencyContainer {
+struct DependencyContainer<'a> {
+    dal: std::rc::Rc<std::cell::OnceCell<std::boxed::Box<dyn DAL + 'a>>>,
+}
+impl<'a> DependencyContainer<'a> {
     fn new() -> Self {
-        Self
+        Self { dal: Default::default() }
     }
     pub fn new_scope(&self) -> Self {
-        Self
+        Self { dal: self.dal.clone() }
     }
     fn create_config(&self) -> Config {
         Config { port: 8080 }
@@ -41,13 +49,13 @@ impl DependencyContainer {
     fn create_dal(&self) -> std::boxed::Box<dyn DAL + '_> {
         if true { Box::new(PostgresDAL) } else { Box::new(SQLiteDAL) }
     }
-    pub fn dal(&self) -> std::boxed::Box<dyn DAL + '_> {
-        self.create_dal()
+    pub fn dal(&self) -> &std::boxed::Box<dyn DAL + '_> {
+        self.dal.get_or_init(|| self.create_dal())
     }
     fn create_service(&self, config: Config, dal: impl DAL) -> Service<impl DAL> {
         Service::new(config.port, dal)
     }
-    pub fn service(&self) -> Service<impl DAL> {
+    pub fn service(&self) -> Service<impl DAL + '_> {
         let config = self.config();
         let dal = self.dal();
         self.create_service(config, dal)
