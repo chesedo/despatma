@@ -1,6 +1,7 @@
 use crate::container::{ChildDependency, Container, Dependency};
 
 mod check_wiring;
+mod extract_box_type;
 mod fix_async_tree;
 mod impl_trait_but_registered_concrete;
 mod set_output_spans;
@@ -10,6 +11,7 @@ use despatma_visitor::{visitor, visitor_mut};
 pub use fix_async_tree::FixAsyncTree;
 pub use impl_trait_but_registered_concrete::ImplTraitButRegisteredConcrete;
 pub use set_output_spans::SetOutputSpans;
+pub use extract_box_type::ExtractBoxType;
 
 visitor!(
     #[helper_tmpl = {

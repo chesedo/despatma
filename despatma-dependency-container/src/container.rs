@@ -10,8 +10,7 @@ use syn::{
 };
 
 use crate::visitor::{
-    CheckWiring, ErrorVisitor, FixAsyncTree, ImplTraitButRegisteredConcrete, SetOutputSpans,
-    Visitable, VisitableMut,
+    CheckWiring, ErrorVisitor, ExtractBoxType, FixAsyncTree, ImplTraitButRegisteredConcrete, SetOutputSpans, Visitable, VisitableMut
 };
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
@@ -72,6 +71,9 @@ impl Container {
 
         let mut set_output_span = SetOutputSpans::new(self.dependencies.clone());
         self.apply_mut(&mut set_output_span);
+
+        let mut extract_box_type = ExtractBoxType::new();
+        self.apply_mut(&mut extract_box_type);
     }
 }
 
@@ -267,36 +269,10 @@ impl Dependency {
             ReturnType::Default => parse_quote! { () },
         };
 
-        let (is_boxed, ty) = if let Type::Path(ref path) = ty {
-            if let Some(last_segment) = path.path.segments.last() {
-                if last_segment.ident == "Box" {
-                    match &last_segment.arguments {
-                        syn::PathArguments::AngleBracketed(generics) => {
-                            if generics.args.len() == 1 {
-                                match &generics.args[0] {
-                                    syn::GenericArgument::Type(ty) => (true, ty.clone()),
-                                    _ => todo!(),
-                                }
-                            } else {
-                                todo!()
-                            }
-                        }
-                        _ => todo!(),
-                    }
-                } else {
-                    (false, ty)
-                }
-            } else {
-                todo!()
-            }
-        } else {
-            (false, ty)
-        };
-
         Self {
             attrs: impl_item_fn.attrs,
             is_async: impl_item_fn.sig.asyncness.is_some(),
-            is_boxed,
+            is_boxed: false,
             sig: impl_item_fn.sig,
             block: impl_item_fn.block,
             lifetime,
@@ -472,7 +448,7 @@ impl Dependency {
         let final_output = match lifetime {
             Lifetime::Transient => quote! { -> #ty },
             Lifetime::Scoped | Lifetime::Singleton => {
-                    quote! { -> &#ty }
+                quote! { -> &#ty }
             }
         };
 
@@ -774,56 +750,6 @@ mod tests {
                             is_boxed: false,
                             lifetime: Lifetime::Transient,
                             ty: parse_quote!(Default),
-                            dependencies: vec![],
-                        })),
-                    ),
-                ]),
-            };
-
-            assert_eq!(container, expected);
-        }
-
-        #[test]
-        fn with_lifetime_boxed() {
-            let container = Container::from_item_impl(parse_quote!(
-                impl DependencyContainer {
-                    #[Singleton]
-                    fn singleton(&self) -> Box<dyn DAL> {
-                        Box::new(Postgres)
-                    }
-
-                    fn dal(&self) -> std::boxed::Box<dyn DAL> {
-                        Box::new(Sqlite)
-                    }
-                }
-            ));
-            let expected = Container {
-                attrs: vec![],
-                self_ty: parse_quote!(DependencyContainer),
-                dependencies: IndexMap::from_iter(vec![
-                    (
-                        parse_quote!(singleton),
-                        Rc::new(RefCell::new(Dependency {
-                            attrs: vec![],
-                            sig: parse_quote!(fn singleton(&self) -> Box<dyn DAL>),
-                            block: parse_quote!({ Box::new(Postgres) }),
-                            is_async: false,
-                            is_boxed: true,
-                            lifetime: Lifetime::Singleton,
-                            ty: parse_quote!(dyn DAL),
-                            dependencies: vec![],
-                        })),
-                    ),
-                    (
-                        parse_quote!(dal),
-                        Rc::new(RefCell::new(Dependency {
-                            attrs: vec![],
-                            sig: parse_quote!(fn dal(&self) -> std::boxed::Box<dyn DAL>),
-                            block: parse_quote!({ Box::new(Sqlite) }),
-                            is_async: false,
-                            is_boxed: true,
-                            lifetime: Lifetime::Transient,
-                            ty: parse_quote!(dyn DAL),
                             dependencies: vec![],
                         })),
                     ),
