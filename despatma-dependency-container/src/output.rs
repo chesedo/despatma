@@ -5,9 +5,9 @@ use quote::{quote, ToTokens};
 use syn::{
     parse_quote,
     punctuated::Punctuated,
-    token::{Async, Await, Const, Fn, Paren, Unsafe},
-    Abi, AngleBracketedGenericArguments, Attribute, Block, Field, FieldValue, FieldsNamed, FnArg,
-    Generics, Ident, Signature, Token, Type, Variadic,
+    token::{Async, Await, Fn, Paren},
+    AngleBracketedGenericArguments, Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident,
+    Signature, Token, Type,
 };
 
 use crate::processing::{self, Lifetime};
@@ -27,16 +27,11 @@ pub struct Container {
 pub struct Dependency {
     attrs: Vec<Attribute>,
     block: Block,
-    constness: Option<Const>,
     asyncness: Option<Async>,
-    unsafety: Option<Unsafe>,
-    abi: Option<Abi>,
     fn_token: Fn,
     ident: Ident,
-    generics: Generics,
     paren_token: Paren,
     inputs: Punctuated<FnArg, Token![,]>,
-    variadic: Option<Variadic>,
     ty: Type,
     create_asyncness: Option<Async>,
     create_ident: Ident,
@@ -207,16 +202,16 @@ impl From<processing::Dependency> for Dependency {
         } = dependency;
 
         let Signature {
-            constness,
+            constness: _,
             asyncness,
-            unsafety,
-            abi,
+            unsafety: _,
+            abi: _,
             fn_token,
             ident,
-            generics,
+            generics: _,
             paren_token,
             inputs,
-            variadic,
+            variadic: _,
             output: _,
         } = sig;
 
@@ -253,16 +248,11 @@ impl From<processing::Dependency> for Dependency {
             create_ty,
             attrs,
             block,
-            constness,
             asyncness,
-            unsafety,
-            abi,
             fn_token,
             ident,
-            generics,
             paren_token,
             inputs,
-            variadic,
             ty,
             is_managed: matches!(lifetime, Lifetime::Singleton | Lifetime::Scoped),
             dependencies,
@@ -341,16 +331,11 @@ impl ToTokens for Dependency {
         let Self {
             attrs,
             block,
-            constness,
             asyncness,
-            unsafety,
-            abi,
             fn_token,
             ident,
-            generics,
             paren_token,
             inputs,
-            variadic,
             ty,
             create_asyncness,
             create_ident,
@@ -364,12 +349,6 @@ impl ToTokens for Dependency {
 
         paren_token.surround(&mut params, |tokens| {
             inputs.to_tokens(tokens);
-            if let Some(variadic) = &variadic {
-                if !inputs.empty_or_trailing() {
-                    <Token![,]>::default().to_tokens(tokens);
-                }
-                variadic.to_tokens(tokens);
-            }
         });
 
         let (create_dependencies, dependency_params): (Vec<_>, Vec<_>) = dependencies
@@ -414,10 +393,10 @@ impl ToTokens for Dependency {
         }
 
         tokens.extend(quote!(
-            #constness #create_asyncness #unsafety #abi #fn_token #create_ident #generics #params -> #create_ty #block
+            #create_asyncness #fn_token #create_ident #params -> #create_ty #block
 
             #(#attrs)*
-            pub #constness #asyncness #unsafety #abi #fn_token #ident #generics(&self) -> #ty {
+            pub #asyncness #fn_token #ident(&self) -> #ty {
                 #(#create_dependencies)*
 
                 #create_call
@@ -490,16 +469,11 @@ mod tests {
                 Dependency {
                     attrs: vec![],
                     block: parse_quote!({ Config::new().await }),
-                    constness: None,
                     asyncness: Some(parse_quote!(async)),
-                    unsafety: None,
-                    abi: None,
                     fn_token: parse_quote!(fn),
                     ident: parse_quote!(config),
-                    generics: Default::default(),
                     paren_token: Default::default(),
                     inputs: parse_quote!(&self),
-                    variadic: None,
                     ty: parse_quote!(&Config),
                     create_asyncness: Some(parse_quote!(async)),
                     create_ident: parse_quote!(create_config),
@@ -510,16 +484,11 @@ mod tests {
                 Dependency {
                     attrs: vec![],
                     block: parse_quote!({ Service::new(config) }),
-                    constness: None,
                     asyncness: Some(parse_quote!(async)),
-                    unsafety: None,
-                    abi: None,
                     fn_token: parse_quote!(fn),
                     ident: parse_quote!(service),
-                    generics: Default::default(),
                     paren_token: Default::default(),
                     inputs: parse_quote!(&self, config: &Config),
-                    variadic: None,
                     ty: parse_quote!(Service),
                     create_asyncness: None,
                     create_ident: parse_quote!(create_service),
@@ -556,16 +525,11 @@ mod tests {
         let expected = Dependency {
             attrs: vec![],
             block: parse_quote!({ Box::new(Sqlite::new()) }),
-            constness: None,
             asyncness: None,
-            unsafety: None,
-            abi: None,
             fn_token: parse_quote!(fn),
             ident: parse_quote!(db),
-            generics: Default::default(),
             paren_token: Default::default(),
             inputs: parse_quote!(&self),
-            variadic: None,
             ty: parse_quote!(&std::boxed::Box<dyn DB + '_>),
             create_asyncness: None,
             create_ident: parse_quote!(create_db),
