@@ -13,7 +13,6 @@ proc-macro = true
 
 [dependencies]
 despatma-visitor = { version = "0.3.2", path = "../despatma-visitor" }
-indexmap = "2.4.0"
 proc-macro-error = "1.0.4"
 proc-macro2.workspace = true
 quote.workspace = true
