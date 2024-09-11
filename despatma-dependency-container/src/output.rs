@@ -107,11 +107,11 @@ fn get_struct_fields(
             .map(|dep| {
                 let dep_ref = dep.borrow();
                 let ident = &dep_ref.sig.ident;
-                let ty = &dep_ref.ty;
+                let field_ty = &dep_ref.field_ty;
 
-                let wrapper_ty = match dep_ref.lifetime {
-                    Lifetime::Singleton => quote! { std::rc::Rc<std::cell::OnceCell<#ty>> },
-                    Lifetime::Scoped => quote! { std::cell::OnceCell<#ty> },
+                let wrapper_ty = match &dep_ref.lifetime {
+                    Lifetime::Singleton => quote! { std::rc::Rc<std::cell::OnceCell<#field_ty>> },
+                    Lifetime::Scoped => quote! { std::cell::OnceCell<#field_ty> },
                     Lifetime::Transient => {
                         unreachable!("we filtered for only singleton and scoped dependencies")
                     }
@@ -194,6 +194,7 @@ impl From<processing::Dependency> for Dependency {
             lifetime,
             ty,
             create_ty,
+            field_ty: _,
             dependencies,
         } = dependency;
 
@@ -418,6 +419,7 @@ mod tests {
             lifetime: Lifetime::Singleton,
             ty: parse_quote! { Config },
             create_ty: parse_quote! { Config },
+            field_ty: Some(parse_quote! { Config }),
             dependencies: vec![],
         }));
         let container = processing::Container {
@@ -438,6 +440,7 @@ mod tests {
                     lifetime: Lifetime::Transient,
                     ty: parse_quote! { Service },
                     create_ty: parse_quote! { Service },
+                    field_ty: None,
                     dependencies: vec![processing::ChildDependency {
                         inner: config,
                         is_ref: true,
@@ -513,6 +516,7 @@ mod tests {
             lifetime: Lifetime::Scoped,
             ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
             create_ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
+            field_ty: Some(parse_quote! { std::boxed::Box<dyn DB + 'a> }),
             dependencies: vec![],
         };
         let dependency: Dependency = dependency.into();

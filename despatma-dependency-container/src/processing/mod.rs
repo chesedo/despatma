@@ -32,6 +32,7 @@ pub struct Dependency {
     pub(crate) lifetime: Lifetime,
     pub(crate) ty: Type,
     pub(crate) create_ty: Type,
+    pub(crate) field_ty: Option<Type>,
     pub(crate) dependencies: Vec<ChildDependency>,
 }
 
@@ -101,6 +102,7 @@ impl From<ImplItemFn> for Dependency {
             lifetime: Lifetime::Transient,
             ty,
             create_ty,
+            field_ty: None,
             dependencies: vec![],
         }
     }
@@ -129,7 +131,7 @@ impl Container {
         // Needs has_explicit_lifetime to be set
         self.process_visitor::<SetNeedsGenericLifetime>();
 
-        // Needs dependencies to be linked and has_explicit_lifetime to be set
+        // Needs dependencies to be linked and lifetimes to be extracted
         // But boxes should not be wrapped yet
         self.process_visitor::<AddWildcardLifetime>();
 
