@@ -7,14 +7,22 @@ pub use extract_box_type::ExtractBoxType;
 pub use extract_lifetime::ExtractLifetime;
 pub use impl_trait_but_registered_concrete::ImplTraitButRegisteredConcrete;
 pub use link_dependencies::LinkDependencies;
+pub use set_has_explicit_lifetime::SetHasExplicitLifetime;
+pub use set_needs_generic_lifetime::SetNeedsGenericLifetime;
 pub use unsupported_registered_types::UnsupportedRegisteredTypes;
+pub use wrap_box_type::WrapBoxType;
+pub use add_wildcard_lifetime::AddWildcardLifetime;
 
+mod add_wildcard_lifetime;
 mod extract_async;
 mod extract_box_type;
 mod extract_lifetime;
 mod impl_trait_but_registered_concrete;
 mod link_dependencies;
+mod set_has_explicit_lifetime;
+mod set_needs_generic_lifetime;
 mod unsupported_registered_types;
+mod wrap_box_type;
 
 visitor_mut!(
     #[helper_tmpl = {

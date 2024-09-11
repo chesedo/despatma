@@ -11,7 +11,7 @@ impl VisitorMut for ExtractLifetime {
     fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
         // Remove all lifetime attributes
         dependency.attrs.retain(|attr| {
-            let Meta::Path(ref path) = attr.meta else {
+            let Meta::Path(path) = &attr.meta else {
                 return true;
             };
 

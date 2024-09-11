@@ -46,10 +46,10 @@ impl<'a> DependencyContainer<'a> {
     pub fn config(&self) -> Config {
         self.create_config()
     }
-    fn create_dal(&self) -> std::boxed::Box<dyn DAL + '_> {
+    fn create_dal(&self) -> std::boxed::Box<dyn DAL> {
         if true { Box::new(PostgresDAL) } else { Box::new(SQLiteDAL) }
     }
-    pub fn dal(&self) -> &std::boxed::Box<dyn DAL + '_> {
+    pub fn dal(&self) -> &std::boxed::Box<dyn DAL + 'a> {
         self.dal.get_or_init(|| self.create_dal())
     }
     fn create_service(&self, config: Config, dal: impl DAL) -> Service<impl DAL> {

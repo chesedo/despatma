@@ -51,6 +51,7 @@ impl From<processing::Container> for Container {
     fn from(container: processing::Container) -> Self {
         let processing::Container {
             attrs,
+            needs_generic_lifetime,
             self_ty,
             dependencies,
         } = container;
@@ -66,10 +67,7 @@ impl From<processing::Container> for Container {
             .cloned()
             .collect();
 
-        let lifetime_generic = if dependencies.iter().any(|d| {
-            let d_ref = d.borrow();
-            d_ref.is_boxed && matches!(d_ref.lifetime, Lifetime::Singleton | Lifetime::Scoped)
-        }) {
+        let lifetime_generic = if needs_generic_lifetime {
             Some(parse_quote! { <'a> })
         } else {
             None
@@ -109,12 +107,8 @@ fn get_struct_fields(
             .map(|dep| {
                 let dep_ref = dep.borrow();
                 let ident = &dep_ref.sig.ident;
-                let ty = if dep_ref.is_boxed {
-                    let ty = &dep_ref.ty;
-                    &parse_quote! { std::boxed::Box<#ty + 'a> }
-                } else {
-                    &dep_ref.ty
-                };
+                let ty = &dep_ref.ty;
+
                 let wrapper_ty = match dep_ref.lifetime {
                     Lifetime::Singleton => quote! { std::rc::Rc<std::cell::OnceCell<#ty>> },
                     Lifetime::Scoped => quote! { std::cell::OnceCell<#ty> },
@@ -195,9 +189,11 @@ impl From<processing::Dependency> for Dependency {
             sig,
             block,
             is_async,
-            is_boxed,
+            is_boxed: _,
+            has_explicit_lifetime: _,
             lifetime,
             ty,
+            create_ty,
             dependencies,
         } = dependency;
 
@@ -222,14 +218,6 @@ impl From<processing::Dependency> for Dependency {
         } else {
             None
         };
-
-        let ty = if is_boxed {
-            parse_quote! { std::boxed::Box<#ty + '_> }
-        } else {
-            ty
-        };
-
-        let create_ty = ty.clone();
 
         let ty = if matches!(lifetime, Lifetime::Singleton | Lifetime::Scoped) {
             parse_quote!(&#ty)
@@ -426,12 +414,15 @@ mod tests {
             block: parse_quote!({ Config::new().await }),
             is_async: true,
             is_boxed: false,
+            has_explicit_lifetime: false,
             lifetime: Lifetime::Singleton,
             ty: parse_quote! { Config },
+            create_ty: parse_quote! { Config },
             dependencies: vec![],
         }));
         let container = processing::Container {
             attrs: vec![],
+            needs_generic_lifetime: false,
             self_ty: parse_quote! { Container },
             dependencies: vec![
                 config.clone(),
@@ -443,8 +434,10 @@ mod tests {
                     block: parse_quote!({ Service::new(config) }),
                     is_async: true,
                     is_boxed: false,
+                    has_explicit_lifetime: false,
                     lifetime: Lifetime::Transient,
                     ty: parse_quote! { Service },
+                    create_ty: parse_quote! { Service },
                     dependencies: vec![processing::ChildDependency {
                         inner: config,
                         is_ref: true,
@@ -516,8 +509,10 @@ mod tests {
             block: parse_quote!({ Box::new(Sqlite::new()) }),
             is_async: false,
             is_boxed: true,
+            has_explicit_lifetime: false,
             lifetime: Lifetime::Scoped,
-            ty: parse_quote! { dyn DB },
+            ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
+            create_ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
             dependencies: vec![],
         };
         let dependency: Dependency = dependency.into();
@@ -530,10 +525,10 @@ mod tests {
             ident: parse_quote!(db),
             paren_token: Default::default(),
             inputs: parse_quote!(&self),
-            ty: parse_quote!(&std::boxed::Box<dyn DB + '_>),
+            ty: parse_quote!(&std::boxed::Box<dyn DB + 'a>),
             create_asyncness: None,
             create_ident: parse_quote!(create_db),
-            create_ty: parse_quote!(std::boxed::Box<dyn DB + '_>),
+            create_ty: parse_quote!(std::boxed::Box<dyn DB + 'a>),
             is_managed: true,
             dependencies: vec![],
         };

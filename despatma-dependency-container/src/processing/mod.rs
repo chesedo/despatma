@@ -5,8 +5,9 @@ use syn::{parse_quote, Attribute, Block, ImplItemFn, ReturnType, Signature, Type
 use crate::input;
 
 use self::visitor::{
-    ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractLifetime, ImplTraitButRegisteredConcrete,
-    LinkDependencies, UnsupportedRegisteredTypes, VisitableMut,
+    AddWildcardLifetime, ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractLifetime,
+    ImplTraitButRegisteredConcrete, LinkDependencies, SetHasExplicitLifetime,
+    SetNeedsGenericLifetime, UnsupportedRegisteredTypes, VisitableMut, WrapBoxType,
 };
 
 mod visitor;
@@ -14,6 +15,7 @@ mod visitor;
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {
     pub(crate) attrs: Vec<Attribute>,
+    pub(crate) needs_generic_lifetime: bool,
     pub(crate) self_ty: Type,
     pub(crate) dependencies: Vec<Rc<RefCell<Dependency>>>,
 }
@@ -26,8 +28,10 @@ pub struct Dependency {
     pub(crate) block: Block,
     pub(crate) is_async: bool,
     pub(crate) is_boxed: bool,
+    pub(crate) has_explicit_lifetime: bool,
     pub(crate) lifetime: Lifetime,
     pub(crate) ty: Type,
+    pub(crate) create_ty: Type,
     pub(crate) dependencies: Vec<ChildDependency>,
 }
 
@@ -63,6 +67,7 @@ impl From<input::Container> for Container {
 
         Self {
             attrs,
+            needs_generic_lifetime: false,
             self_ty,
             dependencies,
         }
@@ -84,14 +89,18 @@ impl From<ImplItemFn> for Dependency {
             ReturnType::Default => parse_quote! { () },
         };
 
+        let create_ty = ty.clone();
+
         Self {
             attrs,
             sig,
             block,
             is_async: false,
             is_boxed: false,
+            has_explicit_lifetime: false,
             lifetime: Lifetime::Transient,
             ty,
+            create_ty,
             dependencies: vec![],
         }
     }
@@ -113,6 +122,19 @@ impl Container {
 
         self.process_visitor::<ExtractBoxType>();
         self.process_visitor::<UnsupportedRegisteredTypes>();
+
+        // Needs lifetimes to be extracted and boxes to be extracted
+        self.process_visitor::<SetHasExplicitLifetime>();
+
+        // Needs has_explicit_lifetime to be set
+        self.process_visitor::<SetNeedsGenericLifetime>();
+
+        // Needs dependencies to be linked and has_explicit_lifetime to be set
+        // But boxes should not be wrapped yet
+        self.process_visitor::<AddWildcardLifetime>();
+
+        // Needs has_explicit_lifetime to be set
+        self.process_visitor::<WrapBoxType>();
     }
 
     fn process_visitor<V: ErrorVisitorMut>(&mut self) {
