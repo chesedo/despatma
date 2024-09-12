@@ -125,7 +125,7 @@ fn get_struct_fields(
 
         Some(parse_quote! {
             {
-                #(#fields)*
+                #(#fields,)*
             }
         })
     }
@@ -455,7 +455,7 @@ mod tests {
             lifetime_generic: None,
             fields: Some(parse_quote! {
                 {
-                    config: std::rc::Rc<std::cell::OnceCell<Config>>
+                    config: std::rc::Rc<std::cell::OnceCell<Config>>,
                 }
             }),
             constructors: parse_quote!( config: Default::default() ),
