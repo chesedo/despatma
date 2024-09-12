@@ -295,13 +295,12 @@ impl ToTokens for Container {
             quote!( { #scope_constructors } )
         };
 
-        // TODO: make new pub
         tokens.extend(quote! {
             #(#attrs)*
             struct #self_ty #lifetime_generic #fields
 
             impl #lifetime_generic #self_ty #lifetime_generic {
-                fn new() -> Self {
+                pub fn new() -> Self {
                     Self #constructors
                 }
 

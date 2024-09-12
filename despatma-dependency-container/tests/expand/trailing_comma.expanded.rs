@@ -16,7 +16,7 @@ impl Service {
 }
 struct DependencyContainer;
 impl DependencyContainer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self
     }
     pub fn new_scope(&self) -> Self {

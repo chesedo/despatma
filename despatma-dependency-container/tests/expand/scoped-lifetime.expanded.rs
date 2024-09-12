@@ -16,7 +16,7 @@ struct DependencyContainer {
     config: std::cell::OnceCell<Config>,
 }
 impl DependencyContainer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { config: Default::default() }
     }
     pub fn new_scope(&self) -> Self {

@@ -27,7 +27,7 @@ struct DependencyContainer {
     dal: std::rc::Rc<std::cell::OnceCell<PostgresDAL>>,
 }
 impl DependencyContainer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { dal: Default::default() }
     }
     pub fn new_scope(&self) -> Self {

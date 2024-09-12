@@ -34,7 +34,7 @@ struct DependencyContainer<'a> {
     dal: std::rc::Rc<std::cell::OnceCell<std::boxed::Box<dyn DAL + 'a>>>,
 }
 impl<'a> DependencyContainer<'a> {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { dal: Default::default() }
     }
     pub fn new_scope(&self) -> Self {
