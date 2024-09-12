@@ -24,8 +24,7 @@ impl VisitorMut for UnsupportedRegisteredTypes {
                 Pat::Ident(_) => None,
                 pat => Some(pat),
             })
-            .cloned()
-            ;
+            .cloned();
 
         self.types.extend(unsupported);
     }

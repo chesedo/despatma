@@ -9,7 +9,10 @@ pub struct SetNeedsGenericLifetime;
 
 impl VisitorMut for SetNeedsGenericLifetime {
     fn visit_container_mut(&mut self, container: &mut Container) {
-        container.needs_generic_lifetime = container.dependencies.iter().any(|d| d.borrow().has_explicit_lifetime);
+        container.needs_generic_lifetime = container
+            .dependencies
+            .iter()
+            .any(|d| d.borrow().has_explicit_lifetime);
     }
 }
 
@@ -27,10 +30,7 @@ mod tests {
         input,
         processing::{
             self,
-            visitor::{
-                ExtractBoxType, ExtractLifetime, SetHasExplicitLifetime,
-                VisitableMut,
-            },
+            visitor::{ExtractBoxType, ExtractLifetime, SetHasExplicitLifetime, VisitableMut},
         },
     };
 

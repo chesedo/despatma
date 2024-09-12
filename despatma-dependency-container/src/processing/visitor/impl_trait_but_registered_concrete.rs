@@ -2,9 +2,9 @@ use proc_macro_error::emit_error;
 use quote::ToTokens;
 use syn::{FnArg, Pat, PatType, Type, TypeImplTrait};
 
-use crate::processing::{Dependency};
+use crate::processing::Dependency;
 
-use super::{ ErrorVisitorMut, VisitorMut};
+use super::{ErrorVisitorMut, VisitorMut};
 
 /// Visitor to find any requested dependencies of a concrete type, while the registered dependency
 /// returns an `impl Trait`.

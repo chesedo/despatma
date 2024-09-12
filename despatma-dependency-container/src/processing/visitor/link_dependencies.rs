@@ -128,8 +128,8 @@ fn get_best_dependency_match(dependencies: &[&Ident], needle: &str) -> Option<Id
 
 #[cfg(test)]
 mod tests {
-    use syn::parse_quote;
     use pretty_assertions::assert_eq;
+    use syn::parse_quote;
 
     use crate::{
         input,

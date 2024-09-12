@@ -2,6 +2,7 @@ use despatma_visitor::visitor_mut;
 
 use super::{ChildDependency, Container, Dependency};
 
+pub use add_wildcard_lifetime::AddWildcardLifetime;
 pub use extract_async::ExtractAsync;
 pub use extract_box_type::ExtractBoxType;
 pub use extract_lifetime::ExtractLifetime;
@@ -11,7 +12,6 @@ pub use set_has_explicit_lifetime::SetHasExplicitLifetime;
 pub use set_needs_generic_lifetime::SetNeedsGenericLifetime;
 pub use unsupported_registered_types::UnsupportedRegisteredTypes;
 pub use wrap_box_type::WrapBoxType;
-pub use add_wildcard_lifetime::AddWildcardLifetime;
 
 mod add_wildcard_lifetime;
 mod extract_async;
