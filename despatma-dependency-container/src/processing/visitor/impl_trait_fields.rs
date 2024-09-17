@@ -119,10 +119,8 @@ mod tests {
 
         container.apply_mut(&mut ExtractLifetime);
 
-
         let mut visitor = ImplTraitFields::new();
         container.apply_mut(&mut visitor);
-
 
         assert_eq!(
             visitor.errors,
