@@ -54,12 +54,12 @@ pub enum Lifetime {
 
 impl PartialEq for Lifetime {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Transient, Self::Transient) => true,
-            (Self::Scoped(_), Self::Scoped(_)) => true,
-            (Self::Singleton(_), Self::Singleton(_)) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Self::Transient, Self::Transient)
+                | (Self::Scoped(_), Self::Scoped(_))
+                | (Self::Singleton(_), Self::Singleton(_))
+        )
     }
 }
 
