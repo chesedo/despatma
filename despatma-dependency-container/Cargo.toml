@@ -23,6 +23,5 @@ syn = { workspace = true, features = ["extra-traits", "full"] }
 auto_impl = "1.2.0"
 macrotest.workspace = true
 pretty_assertions.workspace = true
-syn = { workspace = true, features = ["extra-traits"] }
 tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread", "time"] }
 trybuild.workspace = true
