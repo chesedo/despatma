@@ -7,7 +7,7 @@ let
       (import rustOverlay)
     ];
   };
-  rustVersion = "1.80.0";
+  rustVersion = "1.81.0";
 
   # List of extra tools
   toolList = with pkgs; [
