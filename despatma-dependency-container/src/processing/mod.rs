@@ -7,8 +7,9 @@ use crate::input;
 
 use self::visitor::{
     AddWildcardLifetime, ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractLifetime,
-    ImplTraitButRegisteredConcrete, ImplTraitFields, LinkDependencies, SetHasExplicitLifetime,
-    SetNeedsGenericLifetime, UnsupportedRegisteredTypes, VisitableMut, WrapBoxType,
+    ImplTraitButRegisteredConcrete, ImplTraitFields, LinkDependencies, OwningManagedDependency,
+    SetHasExplicitLifetime, SetNeedsGenericLifetime, UnsupportedRegisteredTypes, VisitableMut,
+    WrapBoxType,
 };
 
 mod visitor;
@@ -41,7 +42,7 @@ pub struct Dependency {
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct ChildDependency {
     pub(crate) inner: Rc<RefCell<Dependency>>,
-    pub(crate) is_ref: bool,
+    pub(crate) ty: Type,
 }
 
 #[derive(Clone)]
@@ -125,16 +126,17 @@ impl From<ImplItemFn> for Dependency {
 impl Container {
     pub fn process(&mut self) {
         self.process_visitor::<ExtractLifetime>();
+        self.process_visitor::<LinkDependencies>();
 
         // Needs lifetimes to be extracted first
         self.process_visitor::<ImplTraitFields>();
 
-        // Needs lifetimes to be extracted first
-        self.process_visitor::<LinkDependencies>();
-
         // Needs dependencies to be linked first
         // But types should not be changed yet
         self.process_visitor::<ImplTraitButRegisteredConcrete>();
+
+        // Needs lifetimes to be extracted and dependencies to be linked
+        self.process_visitor::<OwningManagedDependency>();
 
         // Needs dependencies to be linked first
         self.process_visitor::<ExtractAsync>();

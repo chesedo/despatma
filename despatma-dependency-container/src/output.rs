@@ -263,7 +263,11 @@ impl From<processing::ChildDependency> for ChildDependency {
         } else {
             None
         };
-        let is_ref = child_dependency.is_ref;
+        let is_ref = matches!(child_dependency.ty, Type::Reference(_))
+            && !matches!(
+                child_dependency.inner.borrow().lifetime,
+                Lifetime::Singleton(_) | Lifetime::Scoped(_)
+            );
 
         Self {
             ident,
@@ -451,7 +455,7 @@ mod tests {
                     field_ty: None,
                     dependencies: vec![processing::ChildDependency {
                         inner: config,
-                        is_ref: true,
+                        ty: parse_quote!(&Config),
                     }],
                 })),
             ],
@@ -501,7 +505,7 @@ mod tests {
                     dependencies: vec![ChildDependency {
                         ident: parse_quote!(config),
                         awaitness: Some(parse_quote!(await)),
-                        is_ref: true,
+                        is_ref: false,
                     }],
                 },
             ],

@@ -2,17 +2,15 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use proc_macro_error::emit_error;
 use strsim::levenshtein;
-use syn::{FnArg, Ident, Pat, Type};
+use syn::{FnArg, Ident, Pat};
 
-use crate::processing::{ChildDependency, Container, Dependency, Lifetime};
+use crate::processing::{ChildDependency, Container, Dependency};
 
 use super::{visit_container_mut, ErrorVisitorMut, VisitorMut};
 
 /// Extracts any child dependencies correctly from the registered dependencies and report on any requested dependencies that are not registered.
 /// So if `a` has a dependency on `b`, this visitor will check if `b` has been registered in the container.
 /// If not, it will emit an error.
-///
-/// This extractor requires lifetimes to be extracted first to know if child dependencies should be passed by reference or not.
 pub struct LinkDependencies {
     dependencies: HashMap<Ident, Rc<RefCell<Dependency>>>,
     errors: Vec<Error>,
@@ -51,11 +49,7 @@ impl VisitorMut for LinkDependencies {
                 let Some(child_dependency) =
                     self.dependencies.get(&pat.ident).map(|d| ChildDependency {
                         inner: d.clone(),
-                        is_ref: matches!(pat_type.ty.as_ref(), Type::Reference(_))
-                            && !matches!(
-                                d.borrow().lifetime,
-                                Lifetime::Singleton(_) | Lifetime::Scoped(_)
-                            ),
+                        ty: pat_type.ty.as_ref().clone(),
                     })
                 else {
                     let best_match = get_best_dependency_match(
@@ -181,7 +175,10 @@ mod tests {
                 .ident,
             "config"
         );
-        assert!(container.dependencies[1].borrow().dependencies[0].is_ref);
+        assert_eq!(
+            container.dependencies[1].borrow().dependencies[0].ty,
+            parse_quote!(&Config)
+        );
 
         assert_eq!(
             visitor.errors,

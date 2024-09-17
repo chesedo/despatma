@@ -1,0 +1,14 @@
+error: This dependency is managed by the container
+
+         = help: Take a reference here instead: &Config
+
+  --> tests/fail/taking_ownership_of_managed_dependency.rs:22:31
+   |
+22 |     fn service(&self, config: Config) -> Service {
+   |                               ^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `DependencyContainer`
+  --> tests/fail/taking_ownership_of_managed_dependency.rs:28:21
+   |
+28 |     let container = DependencyContainer::new();
+   |                     ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DependencyContainer`
