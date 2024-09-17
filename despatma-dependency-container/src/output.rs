@@ -214,6 +214,7 @@ impl From<processing::Dependency> for Dependency {
             output: _,
         } = sig;
 
+        let create_ident = Ident::new(&format!("create_{}", ident), ident.span());
         let create_asyncness = asyncness;
 
         let asyncness = if is_async {
@@ -228,13 +229,15 @@ impl From<processing::Dependency> for Dependency {
             ty
         };
 
+        let is_managed = matches!(lifetime, Lifetime::Singleton(_) | Lifetime::Scoped(_));
+
         let dependencies = dependencies
             .into_iter()
             .map(ChildDependency::from)
             .collect();
 
         Self {
-            create_ident: Ident::new(&format!("create_{}", ident), ident.span()),
+            create_ident,
             create_asyncness,
             create_ty,
             attrs,
@@ -245,7 +248,7 @@ impl From<processing::Dependency> for Dependency {
             paren_token,
             inputs,
             ty,
-            is_managed: matches!(lifetime, Lifetime::Singleton(_) | Lifetime::Scoped(_)),
+            is_managed,
             dependencies,
         }
     }
@@ -254,15 +257,18 @@ impl From<processing::Dependency> for Dependency {
 impl From<processing::ChildDependency> for ChildDependency {
     fn from(child_dependency: processing::ChildDependency) -> Self {
         let dep_ref = child_dependency.inner.borrow();
+        let ident = dep_ref.sig.ident.clone();
+        let awaitness = if dep_ref.is_async {
+            Some(<Token![await]>::default())
+        } else {
+            None
+        };
+        let is_ref = child_dependency.is_ref;
 
         Self {
-            ident: dep_ref.sig.ident.clone(),
-            awaitness: if dep_ref.is_async {
-                Some(<Token![await]>::default())
-            } else {
-                None
-            },
-            is_ref: child_dependency.is_ref,
+            ident,
+            awaitness,
+            is_ref,
         }
     }
 }

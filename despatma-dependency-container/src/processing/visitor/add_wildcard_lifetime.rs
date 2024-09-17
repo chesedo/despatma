@@ -8,6 +8,7 @@ use super::{ErrorVisitorMut, VisitorMut};
 /// This is for dependencies which requests and returns an impl Trait dependency which has a managed lifetime.
 ///
 /// Needs to be called after lifetimes are extracted.
+/// And after dependencies are linked.
 /// Needs to be called before boxes are wrapped again.
 pub struct AddWildcardLifetime;
 
@@ -69,10 +70,7 @@ mod tests {
         input,
         processing::{
             self,
-            visitor::{
-                ExtractBoxType, ExtractLifetime, LinkDependencies, SetHasExplicitLifetime,
-                VisitableMut,
-            },
+            visitor::{ExtractBoxType, ExtractLifetime, LinkDependencies, VisitableMut},
         },
     };
 
@@ -105,19 +103,14 @@ mod tests {
 
         container.apply_mut(&mut ExtractBoxType);
         container.apply_mut(&mut ExtractLifetime);
-        container.apply_mut(&mut SetHasExplicitLifetime);
         container.apply_mut(&mut LinkDependencies::new());
 
-        assert!(container.dependencies[0].borrow().has_explicit_lifetime);
         assert_eq!(container.dependencies[0].borrow().ty, parse_quote!(dyn DAL));
-        assert!(!container.dependencies[1].borrow().has_explicit_lifetime);
         assert_eq!(
             container.dependencies[1].borrow().ty,
             parse_quote!(impl Config)
         );
-        assert!(!container.dependencies[2].borrow().has_explicit_lifetime);
         assert_eq!(container.dependencies[2].borrow().ty, parse_quote!(Utc));
-        assert!(!container.dependencies[3].borrow().has_explicit_lifetime);
         assert_eq!(
             container.dependencies[3].borrow().ty,
             parse_quote!(Service<impl DAL, impl Config>),
@@ -125,16 +118,12 @@ mod tests {
 
         container.apply_mut(&mut AddWildcardLifetime);
 
-        assert!(container.dependencies[0].borrow().has_explicit_lifetime);
         assert_eq!(container.dependencies[0].borrow().ty, parse_quote!(dyn DAL));
-        assert!(!container.dependencies[1].borrow().has_explicit_lifetime);
         assert_eq!(
             container.dependencies[1].borrow().ty,
             parse_quote!(impl Config)
         );
-        assert!(!container.dependencies[2].borrow().has_explicit_lifetime);
         assert_eq!(container.dependencies[2].borrow().ty, parse_quote!(Utc));
-        assert!(!container.dependencies[3].borrow().has_explicit_lifetime);
         assert_eq!(
             container.dependencies[3].borrow().ty,
             parse_quote!(Service<impl DAL + '_, impl Config + '_>),

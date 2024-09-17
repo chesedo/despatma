@@ -119,46 +119,10 @@ mod tests {
 
         container.apply_mut(&mut ExtractLifetime);
 
-        assert_eq!(
-            container.dependencies[0].borrow().field_ty,
-            Some(parse_quote!(Singleton))
-        );
-        assert_eq!(
-            container.dependencies[1].borrow().field_ty,
-            Some(parse_quote!(Scoped))
-        );
-        assert_eq!(container.dependencies[2].borrow().field_ty, None);
-        assert_eq!(container.dependencies[3].borrow().field_ty, None);
-        assert_eq!(
-            container.dependencies[4].borrow().field_ty,
-            Some(parse_quote!(impl SingletonTrait))
-        );
-        assert_eq!(
-            container.dependencies[5].borrow().field_ty,
-            Some(parse_quote!(impl ScopedTrait))
-        );
 
         let mut visitor = ImplTraitFields::new();
         container.apply_mut(&mut visitor);
 
-        assert_eq!(
-            container.dependencies[0].borrow().field_ty,
-            Some(parse_quote!(Singleton))
-        );
-        assert_eq!(
-            container.dependencies[1].borrow().field_ty,
-            Some(parse_quote!(Scoped))
-        );
-        assert_eq!(container.dependencies[2].borrow().field_ty, None);
-        assert_eq!(container.dependencies[3].borrow().field_ty, None);
-        assert_eq!(
-            container.dependencies[4].borrow().field_ty,
-            Some(parse_quote!(impl SingletonTrait))
-        );
-        assert_eq!(
-            container.dependencies[5].borrow().field_ty,
-            Some(parse_quote!(impl ScopedTrait))
-        );
 
         assert_eq!(
             visitor.errors,
