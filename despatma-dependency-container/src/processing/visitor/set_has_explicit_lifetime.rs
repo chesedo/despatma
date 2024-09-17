@@ -1,4 +1,4 @@
-use crate::processing::{Dependency, Lifetime};
+use crate::processing::Dependency;
 
 use super::{ErrorVisitorMut, VisitorMut};
 
@@ -10,12 +10,7 @@ pub struct SetHasExplicitLifetime;
 
 impl VisitorMut for SetHasExplicitLifetime {
     fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
-        if dependency.is_boxed
-            && matches!(
-                dependency.lifetime,
-                Lifetime::Singleton(_) | Lifetime::Scoped(_)
-            )
-        {
+        if dependency.is_boxed && dependency.lifetime.is_managed() {
             dependency.has_explicit_lifetime = true;
         }
     }

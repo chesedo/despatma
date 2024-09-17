@@ -2,7 +2,7 @@ use proc_macro_error::emit_error;
 use quote::ToTokens;
 use syn::Type;
 
-use crate::processing::{Dependency, Lifetime};
+use crate::processing::Dependency;
 
 use super::{ErrorVisitorMut, VisitorMut};
 
@@ -24,12 +24,7 @@ impl VisitorMut for OwningManagedDependency {
             .dependencies
             .iter()
             .filter(|child| matches!(child.ty, Type::Path(_)))
-            .filter(|child| {
-                matches!(
-                    child.inner.borrow().lifetime,
-                    Lifetime::Singleton(_) | Lifetime::Scoped(_)
-                )
-            })
+            .filter(|child| child.inner.borrow().lifetime.is_managed())
             .map(|child| child.ty.clone());
 
         self.types.extend(types);

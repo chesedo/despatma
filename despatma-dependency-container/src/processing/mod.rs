@@ -66,6 +66,12 @@ impl PartialEq for Lifetime {
 
 impl Eq for Lifetime {}
 
+impl Lifetime {
+    pub fn is_managed(&self) -> bool {
+        matches!(self, Lifetime::Singleton(_) | Lifetime::Scoped(_))
+    }
+}
+
 impl From<input::Container> for Container {
     fn from(input: input::Container) -> Self {
         let input::Container {

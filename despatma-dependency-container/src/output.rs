@@ -56,14 +56,9 @@ impl From<processing::Container> for Container {
             dependencies,
         } = container;
 
-        let singleton_and_scoped_dependencies: Vec<_> = dependencies
+        let managed_dependencies: Vec<_> = dependencies
             .iter()
-            .filter(|dep| {
-                matches!(
-                    dep.borrow().lifetime,
-                    Lifetime::Singleton(_) | Lifetime::Scoped(_)
-                )
-            })
+            .filter(|dep| dep.borrow().lifetime.is_managed())
             .cloned()
             .collect();
 
@@ -73,11 +68,11 @@ impl From<processing::Container> for Container {
             None
         };
 
-        let fields = get_struct_fields(&singleton_and_scoped_dependencies);
+        let fields = get_struct_fields(&managed_dependencies);
 
-        let constructors = get_struct_field_constructors(&singleton_and_scoped_dependencies);
+        let constructors = get_struct_field_constructors(&managed_dependencies);
 
-        let scope_constructors = get_new_scope_constructors(&singleton_and_scoped_dependencies);
+        let scope_constructors = get_new_scope_constructors(&managed_dependencies);
 
         let dependencies = dependencies
             .into_iter()
@@ -233,13 +228,9 @@ impl From<processing::Dependency> for Dependency {
             None
         };
 
-        let ty = if matches!(lifetime, Lifetime::Singleton(_) | Lifetime::Scoped(_)) {
-            parse_quote!(&#ty)
-        } else {
-            ty
-        };
+        let is_managed = lifetime.is_managed();
 
-        let is_managed = matches!(lifetime, Lifetime::Singleton(_) | Lifetime::Scoped(_));
+        let ty = if is_managed { parse_quote!(&#ty) } else { ty };
 
         let dependencies = dependencies
             .into_iter()
@@ -274,10 +265,7 @@ impl From<processing::ChildDependency> for ChildDependency {
             None
         };
         let is_ref = matches!(child_dependency.ty, Type::Reference(_))
-            && !matches!(
-                child_dependency.inner.borrow().lifetime,
-                Lifetime::Singleton(_) | Lifetime::Scoped(_)
-            );
+            && !child_dependency.inner.borrow().lifetime.is_managed();
 
         Self {
             ident,
