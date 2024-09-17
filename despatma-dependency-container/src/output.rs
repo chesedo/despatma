@@ -61,7 +61,7 @@ impl From<processing::Container> for Container {
             .filter(|dep| {
                 matches!(
                     dep.borrow().lifetime,
-                    Lifetime::Singleton | Lifetime::Scoped
+                    Lifetime::Singleton(_) | Lifetime::Scoped(_)
                 )
             })
             .cloned()
@@ -110,8 +110,10 @@ fn get_struct_fields(
                 let field_ty = &dep_ref.field_ty;
 
                 let wrapper_ty = match &dep_ref.lifetime {
-                    Lifetime::Singleton => quote! { std::rc::Rc<std::cell::OnceCell<#field_ty>> },
-                    Lifetime::Scoped => quote! { std::cell::OnceCell<#field_ty> },
+                    Lifetime::Singleton(_) => {
+                        quote! { std::rc::Rc<std::cell::OnceCell<#field_ty>> }
+                    }
+                    Lifetime::Scoped(_) => quote! { std::cell::OnceCell<#field_ty> },
                     Lifetime::Transient => {
                         unreachable!("we filtered for only singleton and scoped dependencies")
                     }
@@ -165,8 +167,8 @@ fn get_new_scope_constructors(
                 let dep_ref = dep.borrow();
                 let ident = &dep_ref.sig.ident;
                 let init = match dep_ref.lifetime {
-                    Lifetime::Singleton => quote! { self.#ident.clone() },
-                    Lifetime::Scoped => quote! { Default::default() },
+                    Lifetime::Singleton(_) => quote! { self.#ident.clone() },
+                    Lifetime::Scoped(_) => quote! { Default::default() },
                     Lifetime::Transient => {
                         unreachable!("we filtered for only singleton and scoped dependencies")
                     }
@@ -220,7 +222,7 @@ impl From<processing::Dependency> for Dependency {
             None
         };
 
-        let ty = if matches!(lifetime, Lifetime::Singleton | Lifetime::Scoped) {
+        let ty = if matches!(lifetime, Lifetime::Singleton(_) | Lifetime::Scoped(_)) {
             parse_quote!(&#ty)
         } else {
             ty
@@ -243,7 +245,7 @@ impl From<processing::Dependency> for Dependency {
             paren_token,
             inputs,
             ty,
-            is_managed: matches!(lifetime, Lifetime::Singleton | Lifetime::Scoped),
+            is_managed: matches!(lifetime, Lifetime::Singleton(_) | Lifetime::Scoped(_)),
             dependencies,
         }
     }
@@ -398,6 +400,7 @@ mod tests {
     use std::{cell::RefCell, rc::Rc};
 
     use pretty_assertions::assert_eq;
+    use proc_macro2::Span;
     use syn::parse_quote;
 
     use crate::processing::{self, Lifetime};
@@ -415,7 +418,7 @@ mod tests {
             is_async: true,
             is_boxed: false,
             has_explicit_lifetime: false,
-            lifetime: Lifetime::Singleton,
+            lifetime: Lifetime::Singleton(Span::call_site()),
             ty: parse_quote! { Config },
             create_ty: parse_quote! { Config },
             field_ty: Some(parse_quote! { Config }),
@@ -512,7 +515,7 @@ mod tests {
             is_async: false,
             is_boxed: true,
             has_explicit_lifetime: false,
-            lifetime: Lifetime::Scoped,
+            lifetime: Lifetime::Scoped(Span::call_site()),
             ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
             create_ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
             field_ty: Some(parse_quote! { std::boxed::Box<dyn DB + 'a> }),

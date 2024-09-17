@@ -1,12 +1,13 @@
 use std::{cell::RefCell, rc::Rc};
 
+use proc_macro2::Span;
 use syn::{parse_quote, Attribute, Block, ImplItemFn, ReturnType, Signature, Type};
 
 use crate::input;
 
 use self::visitor::{
     AddWildcardLifetime, ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractLifetime,
-    ImplTraitButRegisteredConcrete, LinkDependencies, SetHasExplicitLifetime,
+    ImplTraitButRegisteredConcrete, ImplTraitFields, LinkDependencies, SetHasExplicitLifetime,
     SetNeedsGenericLifetime, UnsupportedRegisteredTypes, VisitableMut, WrapBoxType,
 };
 
@@ -44,12 +45,25 @@ pub struct ChildDependency {
 }
 
 #[derive(Clone)]
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(Debug))]
 pub enum Lifetime {
     Transient,
-    Scoped,
-    Singleton,
+    Scoped(Span),
+    Singleton(Span),
 }
+
+impl PartialEq for Lifetime {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Transient, Self::Transient) => true,
+            (Self::Scoped(_), Self::Scoped(_)) => true,
+            (Self::Singleton(_), Self::Singleton(_)) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for Lifetime {}
 
 impl From<input::Container> for Container {
     fn from(input: input::Container) -> Self {
@@ -111,6 +125,9 @@ impl From<ImplItemFn> for Dependency {
 impl Container {
     pub fn process(&mut self) {
         self.process_visitor::<ExtractLifetime>();
+
+        // Needs lifetimes to be extracted first
+        self.process_visitor::<ImplTraitFields>();
 
         // Needs lifetimes to be extracted first
         self.process_visitor::<LinkDependencies>();

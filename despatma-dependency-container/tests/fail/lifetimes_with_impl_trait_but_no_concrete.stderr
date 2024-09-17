@@ -1,0 +1,25 @@
+error: Need to know which type to store to manage this scoped dependency
+
+         = help: Consider adding a type hint to the lifetime attribute
+         = note: #[Scoped(ScopedType)]
+
+  --> tests/fail/lifetimes_with_impl_trait_but_no_concrete.rs:38:25
+   |
+38 |     fn config(&self) -> impl Config {
+   |                         ^^^^^^^^^^^
+
+error: Need to know which type to store to manage this singleton dependency
+
+         = help: Consider adding a type hint to the lifetime attribute
+         = note: #[Singleton(SingletonType)]
+
+  --> tests/fail/lifetimes_with_impl_trait_but_no_concrete.rs:43:22
+   |
+43 |     fn dal(&self) -> impl DAL {
+   |                      ^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `DependencyContainer`
+  --> tests/fail/lifetimes_with_impl_trait_but_no_concrete.rs:53:21
+   |
+53 |     let container = DependencyContainer::new();
+   |                     ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DependencyContainer`

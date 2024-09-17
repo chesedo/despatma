@@ -11,7 +11,7 @@ pub struct SetHasExplicitLifetime;
 impl VisitorMut for SetHasExplicitLifetime {
     fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
         if dependency.is_boxed
-            && matches!(dependency.lifetime, Lifetime::Singleton | Lifetime::Scoped)
+            && matches!(dependency.lifetime, Lifetime::Singleton(_) | Lifetime::Scoped(_))
         {
             dependency.has_explicit_lifetime = true;
         }

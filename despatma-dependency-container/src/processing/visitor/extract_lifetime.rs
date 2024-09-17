@@ -30,13 +30,13 @@ impl VisitorMut for ExtractLifetime {
 
             match path.segments[0].ident.to_string().as_str() {
                 "Scoped" => {
-                    dependency.lifetime = Lifetime::Scoped;
+                    dependency.lifetime = Lifetime::Scoped(path.segments[0].ident.span());
                     dependency.field_ty = Some(dependency.create_ty.clone());
                     false
                 }
 
                 "Singleton" => {
-                    dependency.lifetime = Lifetime::Singleton;
+                    dependency.lifetime = Lifetime::Singleton(path.segments[0].ident.span());
                     dependency.field_ty = Some(dependency.create_ty.clone());
                     false
                 }
@@ -56,6 +56,7 @@ impl ErrorVisitorMut for ExtractLifetime {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
+    use proc_macro2::Span;
     use syn::parse_quote;
 
     use crate::{
@@ -167,7 +168,7 @@ mod tests {
         assert_eq!(container.dependencies[0].borrow().attrs.len(), 0);
         assert_eq!(
             container.dependencies[0].borrow().lifetime,
-            Lifetime::Singleton
+            Lifetime::Singleton(Span::call_site())
         );
         assert_eq!(
             container.dependencies[0].borrow().create_ty,
@@ -180,7 +181,7 @@ mod tests {
         assert_eq!(container.dependencies[1].borrow().attrs.len(), 0);
         assert_eq!(
             container.dependencies[1].borrow().lifetime,
-            Lifetime::Scoped
+            Lifetime::Scoped(Span::call_site())
         );
         assert_eq!(
             container.dependencies[1].borrow().create_ty,
@@ -213,7 +214,7 @@ mod tests {
         assert_eq!(container.dependencies[4].borrow().attrs.len(), 0);
         assert_eq!(
             container.dependencies[4].borrow().lifetime,
-            Lifetime::Singleton
+            Lifetime::Singleton(Span::call_site())
         );
         assert_eq!(
             container.dependencies[4].borrow().create_ty,
@@ -226,7 +227,7 @@ mod tests {
         assert_eq!(container.dependencies[5].borrow().attrs.len(), 0);
         assert_eq!(
             container.dependencies[5].borrow().lifetime,
-            Lifetime::Scoped
+            Lifetime::Scoped(Span::call_site())
         );
         assert_eq!(
             container.dependencies[5].borrow().create_ty,

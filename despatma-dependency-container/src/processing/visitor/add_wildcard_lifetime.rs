@@ -31,7 +31,7 @@ impl VisitorMut for AddWildcardLifetime {
             .filter(|dep| {
                 matches!(
                     dep.inner.borrow().lifetime,
-                    Lifetime::Singleton | Lifetime::Scoped
+                    Lifetime::Singleton(_) | Lifetime::Scoped(_)
                 )
             })
             .map(|dep| dep.inner.borrow().ty.clone())

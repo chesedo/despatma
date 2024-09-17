@@ -54,7 +54,7 @@ impl VisitorMut for LinkDependencies {
                         is_ref: matches!(pat_type.ty.as_ref(), Type::Reference(_))
                             && !matches!(
                                 d.borrow().lifetime,
-                                Lifetime::Singleton | Lifetime::Scoped
+                                Lifetime::Singleton(_) | Lifetime::Scoped(_)
                             ),
                     })
                 else {
