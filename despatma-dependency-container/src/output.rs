@@ -3,14 +3,20 @@ use std::{cell::RefCell, rc::Rc};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::{
-    parse_quote,
+    parse_quote, parse_str,
     punctuated::Punctuated,
     token::{Async, Await, Fn, Paren},
     AngleBracketedGenericArguments, Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident,
-    Signature, Token, Type,
+    Path, Signature, Token, Type,
 };
 
 use crate::processing::{self, Lifetime};
+
+#[cfg(any(test, feature = "standalone"))]
+const ASYNC_ONCE_CELL_PATH: &str = "async_once_cell::OnceCell";
+
+#[cfg(not(any(test, feature = "standalone")))]
+const ASYNC_ONCE_CELL_PATH: &str = "despatma::async_once_cell::OnceCell";
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {
@@ -107,14 +113,18 @@ fn get_struct_fields(
                 let wrapper_ty = match &dep_ref.lifetime {
                     Lifetime::Singleton(_) => {
                         if dep_ref.is_async {
-                            quote! { std::sync::Arc<async_once_cell::OnceCell<#field_ty>> }
+                            let once_cell_path: Path = parse_str(ASYNC_ONCE_CELL_PATH)
+                                .expect("ASYNC_ONCE_CELL_PATH to be a path");
+                            quote! { std::sync::Arc<#once_cell_path<#field_ty>> }
                         } else {
                             quote! { std::rc::Rc<std::cell::OnceCell<#field_ty>> }
                         }
                     }
                     Lifetime::Scoped(_) => {
                         if dep_ref.is_async {
-                            quote! { async_once_cell::OnceCell<#field_ty> }
+                            let once_cell_path: Path = parse_str(ASYNC_ONCE_CELL_PATH)
+                                .expect("ASYNC_ONCE_CELL_PATH to be a path");
+                            quote! { #once_cell_path<#field_ty> }
                         } else {
                             quote! { std::cell::OnceCell<#field_ty> }
                         }
