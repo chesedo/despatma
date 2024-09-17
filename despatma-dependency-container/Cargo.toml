@@ -20,6 +20,7 @@ strsim = "0.11.1"
 syn = { workspace = true, features = ["extra-traits", "full"] }
 
 [dev-dependencies]
+async-once-cell = "0.5.3"
 auto_impl = "1.2.0"
 macrotest.workspace = true
 pretty_assertions.workspace = true

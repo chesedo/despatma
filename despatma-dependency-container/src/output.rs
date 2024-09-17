@@ -111,9 +111,19 @@ fn get_struct_fields(
 
                 let wrapper_ty = match &dep_ref.lifetime {
                     Lifetime::Singleton(_) => {
-                        quote! { std::rc::Rc<std::cell::OnceCell<#field_ty>> }
+                        if dep_ref.is_async {
+                            quote! { std::sync::Arc<async_once_cell::OnceCell<#field_ty>> }
+                        } else {
+                            quote! { std::rc::Rc<std::cell::OnceCell<#field_ty>> }
+                        }
                     }
-                    Lifetime::Scoped(_) => quote! { std::cell::OnceCell<#field_ty> },
+                    Lifetime::Scoped(_) => {
+                        if dep_ref.is_async {
+                            quote! { async_once_cell::OnceCell<#field_ty> }
+                        } else {
+                            quote! { std::cell::OnceCell<#field_ty> }
+                        }
+                    }
                     Lifetime::Transient => {
                         unreachable!("we filtered for only singleton and scoped dependencies")
                     }
@@ -383,14 +393,25 @@ impl ToTokens for Dependency {
         };
 
         let mut create_call = quote! {
-            self.#create_ident(#(#dependency_params),*)#create_awaitness
+            self.#create_ident(#(#dependency_params),*)
         };
 
-        if *is_managed {
-            create_call = quote! {
-                self.#ident.get_or_init(|| #create_call)
-            };
-        }
+        // Figure out where the await keyword goes
+        create_call = if *is_managed {
+            if create_asyncness.is_some() {
+                quote! {
+                    self.#ident.get_or_init(#create_call)#create_awaitness
+                }
+            } else {
+                quote! {
+                    self.#ident.get_or_init(|| #create_call)#create_awaitness
+                }
+            }
+        } else {
+            quote! {
+                #create_call #create_awaitness
+            }
+        };
 
         tokens.extend(quote!(
             #create_asyncness #fn_token #create_ident #params -> #create_ty #block
@@ -468,7 +489,7 @@ mod tests {
             lifetime_generic: None,
             fields: Some(parse_quote! {
                 {
-                    config: std::rc::Rc<std::cell::OnceCell<Config>>,
+                    config: std::sync::Arc<async_once_cell::OnceCell<Config>>,
                 }
             }),
             constructors: parse_quote!( config: Default::default() ),
