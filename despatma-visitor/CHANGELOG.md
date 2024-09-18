@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3](https://github.com/chesedo/despatma/compare/despatma-visitor-v0.3.2...despatma-visitor-v0.3.3) - 2024-09-18
+
+### Other
+
+- normalize all line endings ([#21](https://github.com/chesedo/despatma/pull/21))
+- Update dev env to Rust 1.81.0 ([#22](https://github.com/chesedo/despatma/pull/22))
+
 ## [0.3.1](https://github.com/chesedo/despatma/compare/despatma-visitor-v0.3.0...despatma-visitor-v0.3.1) - 2024-08-16
 
 ### Other

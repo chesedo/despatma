@@ -10,10 +10,10 @@ keywords = ["macro", "design", "patterns"]
 
 [dependencies]
 async-once-cell.workspace = true
-despatma-abstract-factory = { version = "0.3.2", path = "../despatma-abstract-factory" }
-despatma-dependency-container = { version = "0.3.2", path = "../despatma-dependency-container", default-features = false }
-despatma-lib = { version = "0.3.2", path = "../despatma-lib" }
-despatma-visitor = { version = "0.3.2", path = "../despatma-visitor" }
+despatma-abstract-factory = { version = "0.3.3", path = "../despatma-abstract-factory" }
+despatma-dependency-container = { version = "0.3.3", path = "../despatma-dependency-container", default-features = false }
+despatma-lib = { version = "0.3.3", path = "../despatma-lib" }
+despatma-visitor = { version = "0.3.3", path = "../despatma-visitor" }
 
 [dev-dependencies]
 auto_impl = "1.2.0"

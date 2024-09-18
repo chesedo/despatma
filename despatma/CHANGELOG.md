@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3](https://github.com/chesedo/despatma/compare/despatma-v0.3.2...despatma-v0.3.3) - 2024-09-18
+
+### Added
+
+- *(di)* Lifetimes support ([#20](https://github.com/chesedo/despatma/pull/20))
+
 ## [0.3.0](https://github.com/chesedo/despatma/compare/despatma-v0.2.0...despatma-v0.3.0) - 2024-08-15
 
 ### Added
