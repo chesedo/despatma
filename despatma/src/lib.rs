@@ -924,13 +924,13 @@ pub use despatma_visitor::visitor_mut;
 ///
 /// **Important**: To make this work:
 /// 1. The `service` method needs to take a reference to the `Config` object since the config is now a singleton. Ie we
-/// only want one instance of it to exist, so can't have multiple owned instances of it floating around.
+///    only want one instance of it to exist, so can't have multiple owned instances of it floating around.
 ///
 /// The following dependency lifetimes are supported:
 /// - `#[Singleton]`: The dependency is created once and shared across all requests.
 /// - `#[Scoped]`: The dependency is created once per scope and shared across all requests within that scope.
 /// - `#[Transient]`: The dependency is created each time it is requested. This is the default when no attribute is
-/// provided.
+///   provided.
 ///
 ///
 /// #### With Abstractions
@@ -981,8 +981,8 @@ pub use despatma_visitor::visitor_mut;
 ///
 /// **Important**: To make this work:
 /// 1. Annotate the `DataLayer` trait with `#[auto_impl(&)]`. This implements the `DataLayer` trait for references to it
-/// too. We need this since we are still only giving a reference to `service` when it requests the `DataLayer`
-/// dependency. However, `service` no longer needs to know it is getting a reference like the previous example.
+///    too. We need this since we are still only giving a reference to `service` when it requests the `DataLayer`
+///    dependency. However, `service` no longer needs to know it is getting a reference like the previous example.
 ///
 /// ## Considerations
 ///
