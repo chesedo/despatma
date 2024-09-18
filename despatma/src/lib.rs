@@ -719,7 +719,12 @@ pub use despatma_visitor::visitor_mut;
 ///
 /// ### Returning Traits
 ///
-/// The `dependency_container` macro supports returning trait objects, enabling more flexible and testable code:
+/// The `dependency_container` macro supports returning trait objects. This unlocks a number of benefits:
+/// 1. The `Service` can be decoupled from the concrete implementation of `DataLayer`. This makes it easier to write unit
+///    tests for the `Service` without needing the production `DataLayer`.
+/// 2. By returning a trait object, the `DataLayer` could even be swapped out at runtime. This can be useful for having
+///    new features behind some feature flag. If these features then fails in production, then an immediate rollback is
+///    possible without needing to do a redeploy.
 ///
 /// ```
 /// use despatma::dependency_container;
@@ -759,7 +764,8 @@ pub use despatma_visitor::visitor_mut;
 /// }
 /// ```
 ///
-/// This approach allows for easier testing and swapping of implementations without changing the `service` method.
+/// The `data_layer` function is now the only thing that ever needs to be modified when changing the concrete
+/// implementation of `DataLayer`.
 ///
 /// ### Runtime Abstractions
 ///
