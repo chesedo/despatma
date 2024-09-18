@@ -1,6 +1,6 @@
 use syn::{parse_quote, GenericArgument, PathArguments, Type, TypeImplTrait, TypeTraitObject};
 
-use crate::processing::{Dependency, Lifetime};
+use crate::processing::Dependency;
 
 use super::{ErrorVisitorMut, VisitorMut};
 
@@ -29,12 +29,7 @@ impl VisitorMut for AddWildcardLifetime {
         let deps_needing_wildcard_lifetime: Vec<_> = dependency
             .dependencies
             .iter()
-            .filter(|dep| {
-                matches!(
-                    dep.inner.borrow().lifetime,
-                    Lifetime::Singleton(_) | Lifetime::Scoped(_)
-                )
-            })
+            .filter(|dep| dep.inner.borrow().lifetime.is_managed())
             .map(|dep| dep.inner.borrow().ty.clone())
             .filter_map(|ty| match ty {
                 Type::TraitObject(TypeTraitObject { bounds, .. }) => Some(bounds),
