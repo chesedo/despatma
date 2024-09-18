@@ -13,17 +13,20 @@ proc-macro = true
 
 [dependencies]
 despatma-visitor = { version = "0.3.2", path = "../despatma-visitor" }
-indexmap = "2.4.0"
 proc-macro-error = "1.0.4"
 proc-macro2.workspace = true
 quote.workspace = true
 strsim = "0.11.1"
-syn = { workspace = true, features = ["full"] }
+syn = { workspace = true, features = ["extra-traits", "full"] }
 
 [dev-dependencies]
+async-once-cell.workspace = true
 auto_impl = "1.2.0"
 macrotest.workspace = true
 pretty_assertions.workspace = true
-syn = { workspace = true, features = ["extra-traits"] }
 tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread", "time"] }
 trybuild.workspace = true
+
+[features]
+default = ["standalone"]
+standalone = []

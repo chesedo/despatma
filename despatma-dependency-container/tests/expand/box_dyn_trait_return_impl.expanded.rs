@@ -26,7 +26,10 @@ impl<D: DAL> Service<D> {
 }
 struct DependencyContainer;
 impl DependencyContainer {
-    fn new() -> Self {
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn new_scope(&self) -> Self {
         Self
     }
     fn create_config(&self) -> Config {

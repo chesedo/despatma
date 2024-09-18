@@ -1,10 +1,14 @@
+use auto_impl::auto_impl;
 struct Config {
     port: u32,
 }
 trait DAL {}
+const _: () = {
+    impl<'a, T: 'a + DAL + ?::core::marker::Sized> DAL for &'a T {}
+};
 struct PostgresDAL;
 impl DAL for PostgresDAL {}
-struct Service<D: DAL> {
+struct Service<D> {
     dal: D,
 }
 impl<D: DAL> Service<D> {
@@ -12,21 +16,22 @@ impl<D: DAL> Service<D> {
         {
             ::std::io::_print(
                 format_args!(
-                    "Impl trait but registering concrete service started on port {0}\n",
-                    port,
+                    "Impl Trait singleton lifetime service started on port {0}\n", port,
                 ),
             );
         };
         Self { dal }
     }
 }
-struct DependencyContainer;
+struct DependencyContainer {
+    dal: std::rc::Rc<std::cell::OnceCell<PostgresDAL>>,
+}
 impl DependencyContainer {
     pub fn new() -> Self {
-        Self
+        Self { dal: Default::default() }
     }
     pub fn new_scope(&self) -> Self {
-        Self
+        Self { dal: self.dal.clone() }
     }
     fn create_config(&self) -> Config {
         Config { port: 8080 }
@@ -37,13 +42,13 @@ impl DependencyContainer {
     fn create_dal(&self) -> PostgresDAL {
         PostgresDAL
     }
-    pub fn dal(&self) -> PostgresDAL {
-        self.create_dal()
+    pub fn dal(&self) -> &impl DAL {
+        self.dal.get_or_init(|| self.create_dal())
     }
     fn create_service(&self, config: Config, dal: impl DAL) -> Service<impl DAL> {
         Service::new(config.port, dal)
     }
-    pub fn service(&self) -> Service<impl DAL> {
+    pub fn service(&self) -> Service<impl DAL + '_> {
         let config = self.config();
         let dal = self.dal();
         self.create_service(config, dal)

@@ -1,18 +1,17 @@
-use std::{cell::RefCell, rc::Rc};
-
-use indexmap::IndexMap;
 use proc_macro_error::emit_error;
 use quote::ToTokens;
-use syn::{FnArg, Ident, Pat, PatType, ReturnType, Type, TypeImplTrait};
+use syn::{FnArg, Pat, PatType, Type, TypeImplTrait};
 
-use crate::container::Dependency;
+use crate::processing::Dependency;
 
-use super::{ErrorVisitor, Visitor};
+use super::{ErrorVisitorMut, VisitorMut};
 
 /// Visitor to find any requested dependencies of a concrete type, while the registered dependency
 /// returns an `impl Trait`.
+///
+/// Needs to happen after child dependencies have been linked.
+/// But before any types are changed.
 pub struct ImplTraitButRegisteredConcrete {
-    dependencies: IndexMap<Ident, Rc<RefCell<Dependency>>>,
     errors: Vec<Error>,
 }
 
@@ -22,17 +21,8 @@ struct Error {
     registered: TypeImplTrait,
 }
 
-impl ImplTraitButRegisteredConcrete {
-    pub fn new(dependencies: IndexMap<Ident, Rc<RefCell<Dependency>>>) -> Self {
-        Self {
-            dependencies,
-            errors: Vec::new(),
-        }
-    }
-}
-
-impl Visitor for ImplTraitButRegisteredConcrete {
-    fn visit_dependency(&mut self, dependency: &Dependency) {
+impl VisitorMut for ImplTraitButRegisteredConcrete {
+    fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
         let path_inputs = dependency
             .sig
             .inputs
@@ -51,17 +41,19 @@ impl Visitor for ImplTraitButRegisteredConcrete {
                 _ => continue,
             };
 
-            let Some(child_dependency) = self.dependencies.get(&child_ident) else {
+            let Some(child_dependency) = dependency
+                .dependencies
+                .iter()
+                .map(|d| &d.inner)
+                .find(|d| d.borrow().sig.ident == child_ident)
+            else {
                 continue;
             };
 
             let child_dependency = child_dependency.borrow();
-            let child_return_type = match &child_dependency.sig.output {
-                ReturnType::Default => continue,
-                ReturnType::Type(_, ty) => match ty.as_ref() {
-                    Type::ImplTrait(impl_trait) => impl_trait,
-                    _ => continue,
-                },
+            let child_return_type = match &child_dependency.ty {
+                Type::ImplTrait(impl_trait) => impl_trait,
+                _ => continue,
             };
 
             self.errors.push(Error {
@@ -72,7 +64,13 @@ impl Visitor for ImplTraitButRegisteredConcrete {
     }
 }
 
-impl ErrorVisitor for ImplTraitButRegisteredConcrete {
+impl ErrorVisitorMut for ImplTraitButRegisteredConcrete {
+    fn new() -> Self {
+        Self {
+            errors: Default::default(),
+        }
+    }
+
     fn emit_errors(self) {
         let errors = self.errors;
 
@@ -93,16 +91,23 @@ impl ErrorVisitor for ImplTraitButRegisteredConcrete {
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
     use syn::parse_quote;
 
-    use crate::container::Container;
+    use crate::{
+        input,
+        processing::{
+            self,
+            visitor::{LinkDependencies, VisitableMut},
+        },
+    };
 
     use super::*;
 
     #[test]
     fn impl_trait_but_registered_concrete() {
-        let container = Container::from_item_impl(parse_quote!(
-            impl Dependencies {
+        let mut container: processing::Container = input::Container::from_item_impl(parse_quote!(
+            impl Container {
                 fn db(&self) -> impl DB {
                     Sqlite
                 }
@@ -111,15 +116,18 @@ mod tests {
                     Service(db)
                 }
             }
-        ));
+        ))
+        .into();
 
-        let mut visitor = ImplTraitButRegisteredConcrete::new(container.dependencies.clone());
-        visitor.visit_container(&container);
+        // Test needs them to be linked
+        container.apply_mut(&mut LinkDependencies::new());
 
-        let ImplTraitButRegisteredConcrete { errors, .. } = visitor;
+        let mut visitor = ImplTraitButRegisteredConcrete::new();
+
+        container.apply_mut(&mut visitor);
 
         assert_eq!(
-            errors,
+            visitor.errors,
             vec![Error {
                 requested: parse_quote!(db: Sqlite),
                 registered: parse_quote!(impl DB),

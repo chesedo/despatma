@@ -12,7 +12,10 @@ impl Task {
 }
 struct Dependencies;
 impl Dependencies {
-    fn new() -> Self {
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn new_scope(&self) -> Self {
         Self
     }
     fn create_configuration(&self) -> Configuration {

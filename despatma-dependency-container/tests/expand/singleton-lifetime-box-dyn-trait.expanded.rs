@@ -1,9 +1,19 @@
+use auto_impl::auto_impl;
 struct Config {
     port: u32,
 }
 trait DAL {}
+const _: () = {
+    extern crate alloc;
+    impl<T: DAL + ?::core::marker::Sized> DAL for alloc::boxed::Box<T> {}
+};
+const _: () = {
+    impl<'a, T: 'a + DAL + ?::core::marker::Sized> DAL for &'a T {}
+};
 struct PostgresDAL;
 impl DAL for PostgresDAL {}
+struct SQLiteDAL;
+impl DAL for SQLiteDAL {}
 struct Service<D: DAL> {
     dal: D,
 }
@@ -12,7 +22,7 @@ impl<D: DAL> Service<D> {
         {
             ::std::io::_print(
                 format_args!(
-                    "Impl trait but registering concrete service started on port {0}\n",
+                    "Box dyn Trait singleton lifetime service started on port {0}\n",
                     port,
                 ),
             );
@@ -20,13 +30,15 @@ impl<D: DAL> Service<D> {
         Self { dal }
     }
 }
-struct DependencyContainer;
-impl DependencyContainer {
+struct DependencyContainer<'a> {
+    dal: std::rc::Rc<std::cell::OnceCell<std::boxed::Box<dyn DAL + 'a>>>,
+}
+impl<'a> DependencyContainer<'a> {
     pub fn new() -> Self {
-        Self
+        Self { dal: Default::default() }
     }
     pub fn new_scope(&self) -> Self {
-        Self
+        Self { dal: self.dal.clone() }
     }
     fn create_config(&self) -> Config {
         Config { port: 8080 }
@@ -34,16 +46,16 @@ impl DependencyContainer {
     pub fn config(&self) -> Config {
         self.create_config()
     }
-    fn create_dal(&self) -> PostgresDAL {
-        PostgresDAL
+    fn create_dal(&self) -> std::boxed::Box<dyn DAL> {
+        if true { Box::new(PostgresDAL) } else { Box::new(SQLiteDAL) }
     }
-    pub fn dal(&self) -> PostgresDAL {
-        self.create_dal()
+    pub fn dal(&self) -> &std::boxed::Box<dyn DAL + 'a> {
+        self.dal.get_or_init(|| self.create_dal())
     }
     fn create_service(&self, config: Config, dal: impl DAL) -> Service<impl DAL> {
         Service::new(config.port, dal)
     }
-    pub fn service(&self) -> Service<impl DAL> {
+    pub fn service(&self) -> Service<impl DAL + '_> {
         let config = self.config();
         let dal = self.dal();
         self.create_service(config, dal)

@@ -5,26 +5,32 @@ struct Service;
 impl Service {
     fn new(port: u32) -> Self {
         {
-            ::std::io::_print(format_args!("Service started on port {0}\n", port));
+            ::std::io::_print(
+                format_args!("Service (singleton config) started on port {0}\n", port),
+            );
         };
         Self
     }
 }
-struct DependencyContainer;
+struct DependencyContainer {
+    config: std::rc::Rc<std::cell::OnceCell<Config>>,
+}
 impl DependencyContainer {
     pub fn new() -> Self {
-        Self
+        Self { config: Default::default() }
     }
     pub fn new_scope(&self) -> Self {
-        Self
+        Self {
+            config: self.config.clone(),
+        }
     }
     fn create_config(&self) -> Config {
         Config { port: 8080 }
     }
-    pub fn config(&self) -> Config {
-        self.create_config()
+    pub fn config(&self) -> &Config {
+        self.config.get_or_init(|| self.create_config())
     }
-    fn create_service(&self, config: Config) -> Service {
+    fn create_service(&self, config: &Config) -> Service {
         Service::new(config.port)
     }
     pub fn service(&self) -> Service {

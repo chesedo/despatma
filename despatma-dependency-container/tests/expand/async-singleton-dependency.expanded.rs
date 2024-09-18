@@ -7,27 +7,33 @@ struct Service;
 impl Service {
     fn new(port: u32) -> Self {
         {
-            ::std::io::_print(format_args!("Async service started on port {0}\n", port));
+            ::std::io::_print(
+                format_args!("Async singleton service started on port {0}\n", port),
+            );
         };
         Self
     }
 }
-struct DependencyContainer;
+struct DependencyContainer {
+    config: std::sync::Arc<async_once_cell::OnceCell<Config>>,
+}
 impl DependencyContainer {
     pub fn new() -> Self {
-        Self
+        Self { config: Default::default() }
     }
     pub fn new_scope(&self) -> Self {
-        Self
+        Self {
+            config: self.config.clone(),
+        }
     }
     async fn create_config(&self) -> Config {
         sleep(Duration::from_millis(10)).await;
         Config { port: 8080 }
     }
-    pub async fn config(&self) -> Config {
-        self.create_config().await
+    pub async fn config(&self) -> &Config {
+        self.config.get_or_init(self.create_config()).await
     }
-    fn create_service(&self, config: Config) -> Service {
+    fn create_service(&self, config: &Config) -> Service {
         Service::new(config.port)
     }
     pub async fn service(&self) -> Service {

@@ -9,8 +9,9 @@ license = "MIT"
 keywords = ["macro", "design", "patterns"]
 
 [dependencies]
+async-once-cell.workspace = true
 despatma-abstract-factory = { version = "0.3.2", path = "../despatma-abstract-factory" }
-despatma-dependency-container = { version = "0.3.2", path = "../despatma-dependency-container" }
+despatma-dependency-container = { version = "0.3.2", path = "../despatma-dependency-container", default-features = false }
 despatma-lib = { version = "0.3.2", path = "../despatma-lib" }
 despatma-visitor = { version = "0.3.2", path = "../despatma-visitor" }
 

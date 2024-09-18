@@ -703,12 +703,13 @@ pub use despatma_visitor::visitor_mut;
 ///     }
 /// }
 ///
-/// let container = MyContainer {};
+/// let container = MyContainer::new();
 /// let service = container.service();
 /// ```
 ///
 /// In this example:
 /// - The macro creates a `MyContainer` struct based on the name in the `impl` block.
+/// - The macro also created a `new()` method to instantiate the container.
 /// - Public `config` and `service` methods are generated.
 /// - The `service` method is automatically wired to use the `config` method's output.
 ///
@@ -869,6 +870,120 @@ pub use despatma_visitor::visitor_mut;
 ///
 /// Note that the `service` method will be automatically made `async` by the macro to accommodate the async `config` dependency.
 ///
+/// ### Singleton / Scoped Dependencies
+/// This macro also allows for the management of singleton or scoped dependencies:
+///
+/// ```
+/// use despatma::dependency_container;
+/// # use std::time::Duration;
+/// # use tokio::time::sleep;
+///
+/// // Implementation details...
+/// # struct Config {
+/// #     port: u32,
+/// # }
+/// #
+/// # impl Config {
+/// #     async fn new() -> Self {
+/// #         sleep(Duration::from_secs(1)).await;
+/// #         Config { port: 8080 }
+/// #     }
+/// # }
+/// #
+/// # struct Service;
+/// #
+/// # impl Service {
+/// #     pub fn new(port: u32) -> Self {
+/// #         Service
+/// #     }
+/// # }
+///
+/// #[dependency_container]
+/// impl MyContainer {
+///     #[Singleton]
+///     async fn config(&self) -> Config {
+///         Config::new().await
+///     }
+///
+///     fn service(&self, config: &Config) -> Service {
+///         Service::new(config.port)
+///     }
+/// }
+///
+/// let container = MyContainer::new();
+/// let service = container.service();
+///
+/// let new_container_scope = container.new_scope();
+/// let service2 = container.service();
+/// ```
+///
+/// This is done by adding the `#[Singleton]` or `#[Scoped]` attribute to the registration method of the respective dependency.
+/// In this instance, it will cause the `Config` to only be constructed once - when it is requested for the first time.
+/// But `Service` will be constructed each time it is requested.
+/// New scopes can be started by calling the `new_scope` method on the container.
+///
+/// **Important**: To make this work:
+/// 1. The `service` method needs to take a reference to the `Config` object since the config is now a singleton. Ie we
+///    only want one instance of it to exist, so can't have multiple owned instances of it floating around.
+///
+/// The following dependency lifetimes are supported:
+/// - `#[Singleton]`: The dependency is created once and shared across all requests.
+/// - `#[Scoped]`: The dependency is created once per scope and shared across all requests within that scope.
+/// - `#[Transient]`: The dependency is created each time it is requested. This is the default when no attribute is
+///   provided.
+///
+///
+/// #### With Abstractions
+/// Sometimes you might want to use a trait object for the singleton or scoped dependency. In these instances the container
+/// will need to know a concrete type to store the singleton or scoped dependency.
+/// This can be done by hinting the type on the `Singleton` or `Scoped` attribute:
+///
+/// ```
+/// use auto_impl::auto_impl;
+/// use despatma::dependency_container;
+///
+/// #[auto_impl(&)]
+/// trait DataLayer {
+///     fn get_user_name(&self, id: u32) -> String;
+/// }
+///
+/// // Implementation details...
+/// # struct Sqlite;
+/// #
+/// # impl DataLayer for Sqlite {
+/// #     fn get_user_name(&self, id: u32) -> String {
+/// #          format!("User {}", id)
+/// #     }
+/// # }
+/// #
+/// # struct Service<D: DataLayer> {
+/// #     data_layer: D,
+/// # }
+/// #
+/// # impl<D: DataLayer> Service<D> {
+/// #     pub fn new(data_layer: D) -> Self {
+/// #         Self { data_layer }
+/// #     }
+/// # }
+///
+/// #[dependency_container]
+/// impl Dependencies {
+///     #[Singleton(Sqlite)]
+///     fn data_layer(&self) -> impl DataLayer {
+///         Sqlite
+///     }
+///
+///     fn service(&self, data_layer: impl DataLayer) -> Service<impl DataLayer> {
+///         Service::new(data_layer)
+///     }
+/// }
+/// ```
+///
+/// **Important**: To make this work:
+/// 1. Annotate the `DataLayer` trait with `#[auto_impl(&)]`. This implements the `DataLayer` trait for references to it
+///    too. We need this since we are still only giving a reference to `service` when it requests the `DataLayer`
+///    dependency. However, `service` no longer needs to know it is getting a reference like the previous example.
+///
 /// ## Considerations
 ///
 /// - The macro determines wiring based on method names matching argument names.
@@ -878,3 +993,6 @@ pub use despatma_visitor::visitor_mut;
 ///
 /// For more information on dependency injection in Rust, see this article on [Manual Dependency Injection in Rust](https://chesedo.me/blog/manual-dependency-injection-rust/).
 pub use despatma_dependency_container::dependency_container;
+
+// Re-export this since it is used by the dependency_container macro
+pub use async_once_cell;
