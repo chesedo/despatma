@@ -2,7 +2,6 @@
 version = "0.3.3"
 
 [workspace]
-
 members = [
     "despatma",
     "despatma-abstract-factory",
@@ -11,6 +10,7 @@ members = [
     "despatma-test-helpers",
     "despatma-visitor"
 ]
+resolver = "2"
 
 [workspace.dependencies]
 async-once-cell = "0.5.0"

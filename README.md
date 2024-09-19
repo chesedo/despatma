@@ -27,4 +27,4 @@ Next up for investigation is:
 [abstract_factory]: https://docs.rs/despatma/latest/despatma/attr.abstract_factory.html
 [interpolate_traits]: https://docs.rs/despatma/latest/despatma/attr.interpolate_traits.html
 [visitor]: https://docs.rs/despatma/latest/despatma/macro.visitor.html
-[dependency_container]: https://docs.rs/despatma/latest/despatma/macro.dependency_container.html
+[dependency_container]: https://docs.rs/despatma/latest/despatma/attr.dependency_container.html
