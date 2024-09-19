@@ -112,7 +112,7 @@ fn get_struct_fields(
 
                 let wrapper_ty = match &dep_ref.lifetime {
                     Lifetime::Singleton(_) => {
-                        if dep_ref.is_async {
+                        if dep_ref.sig.asyncness.is_some() {
                             let once_cell_path: Path = parse_str(ASYNC_ONCE_CELL_PATH)
                                 .expect("ASYNC_ONCE_CELL_PATH to be a path");
                             quote! { std::sync::Arc<#once_cell_path<#field_ty>> }
@@ -121,7 +121,7 @@ fn get_struct_fields(
                         }
                     }
                     Lifetime::Scoped(_) => {
-                        if dep_ref.is_async {
+                        if dep_ref.sig.asyncness.is_some() {
                             let once_cell_path: Path = parse_str(ASYNC_ONCE_CELL_PATH)
                                 .expect("ASYNC_ONCE_CELL_PATH to be a path");
                             quote! { #once_cell_path<#field_ty> }
@@ -453,18 +453,37 @@ mod tests {
             field_ty: Some(parse_quote! { Config }),
             dependencies: vec![],
         }));
+        let db = Rc::new(RefCell::new(processing::Dependency {
+            attrs: vec![],
+            sig: parse_quote! {
+                fn db(&self, config: &Config) -> Sqlite
+            },
+            block: parse_quote!({ Sqlite::new(config.conn_str) }),
+            is_async: true,
+            is_boxed: false,
+            has_explicit_lifetime: false,
+            lifetime: Lifetime::Singleton(Span::call_site()),
+            ty: parse_quote! { Sqlite },
+            create_ty: parse_quote! { Sqlite },
+            field_ty: Some(parse_quote! { Sqlite }),
+            dependencies: vec![processing::ChildDependency {
+                inner: config.clone(),
+                ty: parse_quote!(&Config),
+            }],
+        }));
         let container = processing::Container {
             attrs: vec![],
             needs_generic_lifetime: false,
             self_ty: parse_quote! { Container },
             dependencies: vec![
-                config.clone(),
+                config,
+                db.clone(),
                 Rc::new(RefCell::new(processing::Dependency {
                     attrs: vec![],
                     sig: parse_quote! {
-                        fn service(&self, config: &Config) -> Service
+                        fn service(&self, db: &Sqlite) -> Service
                     },
-                    block: parse_quote!({ Service::new(config) }),
+                    block: parse_quote!({ Service::new(db) }),
                     is_async: true,
                     is_boxed: false,
                     has_explicit_lifetime: false,
@@ -473,8 +492,8 @@ mod tests {
                     create_ty: parse_quote! { Service },
                     field_ty: None,
                     dependencies: vec![processing::ChildDependency {
-                        inner: config,
-                        ty: parse_quote!(&Config),
+                        inner: db,
+                        ty: parse_quote!(&Sqlite),
                     }],
                 })),
             ],
@@ -488,10 +507,11 @@ mod tests {
             fields: Some(parse_quote! {
                 {
                     config: std::sync::Arc<async_once_cell::OnceCell<Config>>,
+                    db: std::rc::Rc<std::cell::OnceCell<Sqlite>>,
                 }
             }),
-            constructors: parse_quote!( config: Default::default() ),
-            scope_constructors: parse_quote!( config: self.config.clone() ),
+            constructors: parse_quote!( config: Default::default(), db: Default::default() ),
+            scope_constructors: parse_quote!( config: self.config.clone(), db: self.db.clone() ),
             dependencies: vec![
                 Dependency {
                     attrs: vec![],
@@ -510,19 +530,38 @@ mod tests {
                 },
                 Dependency {
                     attrs: vec![],
-                    block: parse_quote!({ Service::new(config) }),
+                    block: parse_quote!({ Sqlite::new(config.conn_str) }),
+                    asyncness: Some(parse_quote!(async)),
+                    fn_token: parse_quote!(fn),
+                    ident: parse_quote!(db),
+                    paren_token: Default::default(),
+                    inputs: parse_quote!(&self, config: &Config),
+                    ty: parse_quote!(&Sqlite),
+                    create_asyncness: None,
+                    create_ident: parse_quote!(create_db),
+                    create_ty: parse_quote!(Sqlite),
+                    is_managed: true,
+                    dependencies: vec![ChildDependency {
+                        ident: parse_quote!(config),
+                        awaitness: Some(parse_quote!(await)),
+                        is_ref: false,
+                    }],
+                },
+                Dependency {
+                    attrs: vec![],
+                    block: parse_quote!({ Service::new(db) }),
                     asyncness: Some(parse_quote!(async)),
                     fn_token: parse_quote!(fn),
                     ident: parse_quote!(service),
                     paren_token: Default::default(),
-                    inputs: parse_quote!(&self, config: &Config),
+                    inputs: parse_quote!(&self, db: &Sqlite),
                     ty: parse_quote!(Service),
                     create_asyncness: None,
                     create_ident: parse_quote!(create_service),
                     create_ty: parse_quote!(Service),
                     is_managed: false,
                     dependencies: vec![ChildDependency {
-                        ident: parse_quote!(config),
+                        ident: parse_quote!(db),
                         awaitness: Some(parse_quote!(await)),
                         is_ref: false,
                     }],
