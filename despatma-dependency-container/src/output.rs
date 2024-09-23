@@ -6,8 +6,7 @@ use syn::{
     parse_quote, parse_str,
     punctuated::Punctuated,
     token::{Async, Await, Fn, Paren},
-    AngleBracketedGenericArguments, Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident,
-    Path, Signature, Token, Type,
+    Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident, Path, Signature, Token, Type,
 };
 
 use crate::processing::{self, Lifetime};
@@ -22,8 +21,7 @@ const ASYNC_ONCE_CELL_PATH: &str = "despatma::async_once_cell::OnceCell";
 pub struct Container {
     attrs: Vec<Attribute>,
     self_ty: Type,
-    lifetime_generic: Option<AngleBracketedGenericArguments>,
-    fields: Option<FieldsNamed>,
+    fields: Punctuated<Field, Token![,]>,
     constructors: Punctuated<FieldValue, Token![,]>,
     scope_constructors: Punctuated<FieldValue, Token![,]>,
     dependencies: Vec<Dependency>,
@@ -57,7 +55,6 @@ impl From<processing::Container> for Container {
     fn from(container: processing::Container) -> Self {
         let processing::Container {
             attrs,
-            needs_generic_lifetime,
             self_ty,
             dependencies,
         } = container;
@@ -67,12 +64,6 @@ impl From<processing::Container> for Container {
             .filter(|dep| dep.borrow().lifetime.is_managed())
             .cloned()
             .collect();
-
-        let lifetime_generic = if needs_generic_lifetime {
-            Some(parse_quote! { <'a> })
-        } else {
-            None
-        };
 
         let fields = get_struct_fields(&managed_dependencies);
 
@@ -88,7 +79,6 @@ impl From<processing::Container> for Container {
         Self {
             attrs,
             self_ty,
-            lifetime_generic,
             fields,
             constructors,
             scope_constructors,
@@ -99,9 +89,9 @@ impl From<processing::Container> for Container {
 
 fn get_struct_fields(
     managed_dependencies: &[Rc<RefCell<processing::Dependency>>],
-) -> Option<FieldsNamed> {
+) -> Punctuated<Field, Token![,]> {
     if managed_dependencies.is_empty() {
-        None
+        Default::default()
     } else {
         let fields: Vec<Field> = managed_dependencies
             .iter()
@@ -140,11 +130,15 @@ fn get_struct_fields(
             })
             .collect();
 
-        Some(parse_quote! {
+        // Can't parse directly to punctuated because [Field] does not implement [Parse].
+        // So using this workaround.
+        let fields_named: FieldsNamed = parse_quote! {
             {
                 #(#fields,)*
             }
-        })
+        };
+
+        fields_named.named
     }
 }
 
@@ -166,7 +160,7 @@ fn get_struct_field_constructors(
             })
             .collect();
 
-        parse_quote! { #(#fields),* }
+        parse_quote! { #(#fields,)* }
     }
 }
 
@@ -195,7 +189,7 @@ fn get_new_scope_constructors(
             })
             .collect();
 
-        parse_quote! { #(#fields),* }
+        parse_quote! { #(#fields,)* }
     }
 }
 
@@ -290,42 +284,32 @@ impl ToTokens for Container {
         let Self {
             attrs,
             self_ty,
-            lifetime_generic,
             fields,
             constructors,
             scope_constructors,
             dependencies,
         } = self;
 
-        let fields = if let Some(fields) = fields {
-            quote! { #fields }
-        } else {
-            quote!(;)
-        };
-
-        let constructors = if constructors.is_empty() {
-            quote!()
-        } else {
-            quote!( { #constructors } )
-        };
-
-        let scope_constructors = if scope_constructors.is_empty() {
-            quote!()
-        } else {
-            quote!( { #scope_constructors } )
-        };
-
         tokens.extend(quote! {
             #(#attrs)*
-            struct #self_ty #lifetime_generic #fields
+            struct #self_ty <'a> {
+                #fields
+                _phantom: std::marker::PhantomData<&'a ()>,
+            }
 
-            impl #lifetime_generic #self_ty #lifetime_generic {
+            impl <'a> #self_ty <'a> {
                 pub fn new() -> Self {
-                    Self #constructors
+                    Self {
+                        #constructors
+                        _phantom: Default::default(),
+                    }
                 }
 
                 pub fn new_scope(&self) -> Self {
-                    Self #scope_constructors
+                    Self {
+                        #scope_constructors
+                        _phantom: Default::default(),
+                    }
                 }
 
                 #(#dependencies)*
@@ -473,7 +457,6 @@ mod tests {
         }));
         let container = processing::Container {
             attrs: vec![],
-            needs_generic_lifetime: false,
             self_ty: parse_quote! { Container },
             dependencies: vec![
                 config,
@@ -500,18 +483,21 @@ mod tests {
         };
         let container: super::Container = container.into();
 
-        let expected = super::Container {
-            attrs: vec![],
-            self_ty: parse_quote! { Container },
-            lifetime_generic: None,
-            fields: Some(parse_quote! {
+        let fields = {
+            let named: FieldsNamed = parse_quote! {
                 {
                     config: std::sync::Arc<async_once_cell::OnceCell<Config>>,
                     db: std::rc::Rc<std::cell::OnceCell<Sqlite>>,
                 }
-            }),
-            constructors: parse_quote!( config: Default::default(), db: Default::default() ),
-            scope_constructors: parse_quote!( config: self.config.clone(), db: self.db.clone() ),
+            };
+            named.named
+        };
+        let expected = super::Container {
+            attrs: vec![],
+            self_ty: parse_quote! { Container },
+            fields,
+            constructors: parse_quote!( config: Default::default(), db: Default::default(), ),
+            scope_constructors: parse_quote!( config: self.config.clone(), db: self.db.clone(), ),
             dependencies: vec![
                 Dependency {
                     attrs: vec![],

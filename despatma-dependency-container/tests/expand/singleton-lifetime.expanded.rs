@@ -12,16 +12,21 @@ impl Service {
         Self
     }
 }
-struct DependencyContainer {
+struct DependencyContainer<'a> {
     config: std::rc::Rc<std::cell::OnceCell<Config>>,
+    _phantom: std::marker::PhantomData<&'a ()>,
 }
-impl DependencyContainer {
+impl<'a> DependencyContainer<'a> {
     pub fn new() -> Self {
-        Self { config: Default::default() }
+        Self {
+            config: Default::default(),
+            _phantom: Default::default(),
+        }
     }
     pub fn new_scope(&self) -> Self {
         Self {
             config: self.config.clone(),
+            _phantom: Default::default(),
         }
     }
     fn create_config(&self) -> Config {

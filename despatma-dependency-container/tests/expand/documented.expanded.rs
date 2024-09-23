@@ -8,13 +8,19 @@ impl Service {
     }
 }
 /// A dependency container for the application.
-struct DependencyContainer;
-impl DependencyContainer {
+struct DependencyContainer<'a> {
+    _phantom: std::marker::PhantomData<&'a ()>,
+}
+impl<'a> DependencyContainer<'a> {
     pub fn new() -> Self {
-        Self
+        Self {
+            _phantom: Default::default(),
+        }
     }
     pub fn new_scope(&self) -> Self {
-        Self
+        Self {
+            _phantom: Default::default(),
+        }
     }
     fn create_service(&self) -> Service {
         Service::new()
