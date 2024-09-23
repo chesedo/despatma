@@ -38,9 +38,7 @@ pub struct Dependency {
     inputs: Punctuated<FnArg, Token![,]>,
     ty: Type,
     create_asyncness: Option<Async>,
-    create_ident: Ident,
     is_managed: bool,
-    create_ty: Type,
     dependencies: Vec<ChildDependency>,
 }
 
@@ -48,7 +46,6 @@ pub struct Dependency {
 pub struct ChildDependency {
     ident: Ident,
     awaitness: Option<Await>,
-    is_ref: bool,
 }
 
 impl From<processing::Container> for Container {
@@ -204,7 +201,6 @@ impl From<processing::Dependency> for Dependency {
             has_explicit_lifetime: _,
             lifetime,
             ty,
-            create_ty,
             field_ty: _,
             dependencies,
         } = dependency;
@@ -223,7 +219,6 @@ impl From<processing::Dependency> for Dependency {
             output: _,
         } = sig;
 
-        let create_ident = Ident::new(&format!("create_{}", ident), ident.span());
         let create_asyncness = asyncness;
 
         let asyncness = if is_async {
@@ -242,9 +237,7 @@ impl From<processing::Dependency> for Dependency {
             .collect();
 
         Self {
-            create_ident,
             create_asyncness,
-            create_ty,
             attrs,
             block,
             asyncness,
@@ -268,14 +261,8 @@ impl From<processing::ChildDependency> for ChildDependency {
         } else {
             None
         };
-        let is_ref = matches!(child_dependency.ty, Type::Reference(_))
-            && !child_dependency.inner.borrow().lifetime.is_managed();
 
-        Self {
-            ident,
-            awaitness,
-            is_ref,
-        }
+        Self { ident, awaitness }
     }
 }
 
@@ -330,8 +317,6 @@ impl ToTokens for Dependency {
             inputs,
             ty,
             create_asyncness,
-            create_ident,
-            create_ty,
             is_managed,
             dependencies,
         } = self;
@@ -343,14 +328,10 @@ impl ToTokens for Dependency {
             inputs.to_tokens(tokens);
         });
 
-        let (create_dependencies, dependency_params): (Vec<_>, Vec<_>) = dependencies
+        let create_dependencies: Vec<_> = dependencies
             .iter()
             .map(|child_dependency| {
-                let ChildDependency {
-                    ident,
-                    awaitness,
-                    is_ref,
-                } = child_dependency;
+                let ChildDependency { ident, awaitness } = child_dependency;
 
                 let awaitness = awaitness.map(|awaitness| quote! { .#awaitness });
 
@@ -358,51 +339,33 @@ impl ToTokens for Dependency {
                     let #ident = self.#ident()#awaitness;
                 };
 
-                let param = if *is_ref {
-                    quote! { &#ident }
-                } else {
-                    quote! { #ident }
-                };
-
-                (create_stmt, param)
+                create_stmt
             })
-            .unzip();
+            .collect();
 
-        let create_awaitness = if create_asyncness.is_some() {
-            Some(quote! { .await })
-        } else {
-            None
-        };
-
-        let mut create_call = quote! {
-            self.#create_ident(#(#dependency_params),*)
-        };
-
-        // Figure out where the await keyword goes
-        create_call = if *is_managed {
+        // Figure out the correct final statement
+        let final_stmt = if *is_managed {
             if create_asyncness.is_some() {
                 quote! {
-                    self.#ident.get_or_init(#create_call)#create_awaitness
+                    self.#ident.get_or_init(async { #block }).await
                 }
             } else {
                 quote! {
-                    self.#ident.get_or_init(|| #create_call)#create_awaitness
+                    self.#ident.get_or_init(|| #block)
                 }
             }
         } else {
             quote! {
-                #create_call #create_awaitness
+                #block
             }
         };
 
         tokens.extend(quote!(
-            #create_asyncness #fn_token #create_ident #params -> #create_ty #block
-
             #(#attrs)*
             pub #asyncness #fn_token #ident(&self) -> #ty {
                 #(#create_dependencies)*
 
-                #create_call
+                #final_stmt
             }
         ));
     }
@@ -433,7 +396,6 @@ mod tests {
             has_explicit_lifetime: false,
             lifetime: Lifetime::Singleton(Span::call_site()),
             ty: parse_quote! { Config },
-            create_ty: parse_quote! { Config },
             field_ty: Some(parse_quote! { Config }),
             dependencies: vec![],
         }));
@@ -448,7 +410,6 @@ mod tests {
             has_explicit_lifetime: false,
             lifetime: Lifetime::Singleton(Span::call_site()),
             ty: parse_quote! { Sqlite },
-            create_ty: parse_quote! { Sqlite },
             field_ty: Some(parse_quote! { Sqlite }),
             dependencies: vec![processing::ChildDependency {
                 inner: config.clone(),
@@ -472,7 +433,6 @@ mod tests {
                     has_explicit_lifetime: false,
                     lifetime: Lifetime::Transient,
                     ty: parse_quote! { Service },
-                    create_ty: parse_quote! { Service },
                     field_ty: None,
                     dependencies: vec![processing::ChildDependency {
                         inner: db,
@@ -509,8 +469,6 @@ mod tests {
                     inputs: parse_quote!(&self),
                     ty: parse_quote!(&Config),
                     create_asyncness: Some(parse_quote!(async)),
-                    create_ident: parse_quote!(create_config),
-                    create_ty: parse_quote!(Config),
                     is_managed: true,
                     dependencies: vec![],
                 },
@@ -524,13 +482,10 @@ mod tests {
                     inputs: parse_quote!(&self, config: &Config),
                     ty: parse_quote!(&Sqlite),
                     create_asyncness: None,
-                    create_ident: parse_quote!(create_db),
-                    create_ty: parse_quote!(Sqlite),
                     is_managed: true,
                     dependencies: vec![ChildDependency {
                         ident: parse_quote!(config),
                         awaitness: Some(parse_quote!(await)),
-                        is_ref: false,
                     }],
                 },
                 Dependency {
@@ -543,13 +498,10 @@ mod tests {
                     inputs: parse_quote!(&self, db: &Sqlite),
                     ty: parse_quote!(Service),
                     create_asyncness: None,
-                    create_ident: parse_quote!(create_service),
-                    create_ty: parse_quote!(Service),
                     is_managed: false,
                     dependencies: vec![ChildDependency {
                         ident: parse_quote!(db),
                         awaitness: Some(parse_quote!(await)),
-                        is_ref: false,
                     }],
                 },
             ],
@@ -571,7 +523,6 @@ mod tests {
             has_explicit_lifetime: false,
             lifetime: Lifetime::Scoped(Span::call_site()),
             ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
-            create_ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
             field_ty: Some(parse_quote! { std::boxed::Box<dyn DB + 'a> }),
             dependencies: vec![],
         };
@@ -587,8 +538,6 @@ mod tests {
             inputs: parse_quote!(&self),
             ty: parse_quote!(&std::boxed::Box<dyn DB + 'a>),
             create_asyncness: None,
-            create_ident: parse_quote!(create_db),
-            create_ty: parse_quote!(std::boxed::Box<dyn DB + 'a>),
             is_managed: true,
             dependencies: vec![],
         };

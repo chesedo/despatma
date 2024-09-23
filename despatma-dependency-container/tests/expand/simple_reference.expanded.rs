@@ -24,18 +24,12 @@ impl<'a> Dependencies<'a> {
             _phantom: Default::default(),
         }
     }
-    fn create_configuration(&self) -> Configuration {
-        Configuration { port: 8080 }
-    }
     pub fn configuration(&self) -> Configuration {
-        self.create_configuration()
-    }
-    fn create_task(&self, configuration: &Configuration) -> Task {
-        Task::new(configuration.port)
+        { Configuration { port: 8080 } }
     }
     pub fn task(&self) -> Task {
         let configuration = self.configuration();
-        self.create_task(&configuration)
+        { Task::new(configuration.port) }
     }
 }
 fn main() {
