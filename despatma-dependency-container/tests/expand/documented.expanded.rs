@@ -22,12 +22,9 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    fn create_service(&self) -> Service {
-        Service::new()
-    }
     /// Creates a new instance of the service.
     pub fn service(&self) -> Service {
-        self.create_service()
+        { Service::new() }
     }
 }
 fn main() {

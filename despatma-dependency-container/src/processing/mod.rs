@@ -31,7 +31,6 @@ pub struct Dependency {
     pub(crate) has_explicit_lifetime: bool,
     pub(crate) lifetime: Lifetime,
     pub(crate) ty: Type,
-    pub(crate) create_ty: Type,
     pub(crate) field_ty: Option<Type>,
     pub(crate) dependencies: Vec<ChildDependency>,
 }
@@ -108,8 +107,6 @@ impl From<ImplItemFn> for Dependency {
             ReturnType::Default => parse_quote! { () },
         };
 
-        let create_ty = ty.clone();
-
         Self {
             attrs,
             sig,
@@ -119,7 +116,6 @@ impl From<ImplItemFn> for Dependency {
             has_explicit_lifetime: false,
             lifetime: Lifetime::Transient,
             ty,
-            create_ty,
             field_ty: None,
             dependencies: vec![],
         }

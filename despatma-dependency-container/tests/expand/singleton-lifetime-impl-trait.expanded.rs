@@ -40,25 +40,16 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    fn create_config(&self) -> Config {
-        Config { port: 8080 }
-    }
     pub fn config(&self) -> Config {
-        self.create_config()
-    }
-    fn create_dal(&self) -> PostgresDAL {
-        PostgresDAL
+        { Config { port: 8080 } }
     }
     pub fn dal(&self) -> &impl DAL {
-        self.dal.get_or_init(|| self.create_dal())
-    }
-    fn create_service(&self, config: Config, dal: impl DAL) -> Service<impl DAL> {
-        Service::new(config.port, dal)
+        self.dal.get_or_init(|| { PostgresDAL })
     }
     pub fn service(&self) -> Service<impl DAL + '_> {
         let config = self.config();
         let dal = self.dal();
-        self.create_service(config, dal)
+        { Service::new(config.port, dal) }
     }
 }
 fn main() {

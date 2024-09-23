@@ -36,7 +36,6 @@ impl VisitorMut for ExtractBoxType {
         };
 
         dependency.is_boxed = true;
-        dependency.create_ty = ty.clone();
         dependency.ty = ty.clone();
     }
 }
@@ -79,17 +78,9 @@ mod tests {
             container.dependencies[0].borrow().ty,
             parse_quote!(Box<dyn DAL>),
         );
-        assert_eq!(
-            container.dependencies[0].borrow().create_ty,
-            parse_quote!(Box<dyn DAL>),
-        );
         assert!(!container.dependencies[1].borrow().is_boxed);
         assert_eq!(
             container.dependencies[1].borrow().ty,
-            parse_quote!(std::boxed::Box<dyn DAL>),
-        );
-        assert_eq!(
-            container.dependencies[1].borrow().create_ty,
             parse_quote!(std::boxed::Box<dyn DAL>),
         );
 
@@ -97,15 +88,7 @@ mod tests {
 
         assert!(container.dependencies[0].borrow().is_boxed);
         assert_eq!(container.dependencies[0].borrow().ty, parse_quote!(dyn DAL));
-        assert_eq!(
-            container.dependencies[0].borrow().create_ty,
-            parse_quote!(dyn DAL)
-        );
         assert!(container.dependencies[1].borrow().is_boxed);
         assert_eq!(container.dependencies[1].borrow().ty, parse_quote!(dyn DAL));
-        assert_eq!(
-            container.dependencies[1].borrow().create_ty,
-            parse_quote!(dyn DAL)
-        );
     }
 }

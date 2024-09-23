@@ -1,17 +1,13 @@
-error[E0308]: arguments to this method are incorrect
-  --> tests/fail/mismatch_return_type.rs:24:8
+error[E0308]: arguments to this function are incorrect
+  --> tests/fail/mismatch_return_type.rs:25:9
    |
-18 |     fn config(&self) -> Config {
-   |        ------ expected `u32`, found `Config`
-...
-22 |     fn unit(&self) {}
-   |        ---- expected `Unit`, found `()`
-23 |
-24 |     fn service(&self, config: u32, unit: Unit) -> Service {
-   |        ^^^^^^^
+25 |         Service::new(config, unit)
+   |         ^^^^^^^^^^^^ ------  ---- expected `Unit`, found `()`
+   |                      |
+   |                      expected `u32`, found `Config`
    |
-note: method defined here
-  --> tests/fail/mismatch_return_type.rs:24:8
+note: associated function defined here
+  --> tests/fail/mismatch_return_type.rs:10:8
    |
-24 |     fn service(&self, config: u32, unit: Unit) -> Service {
-   |        ^^^^^^^        -----------  ----------
+10 |     fn new(port: u32, _unit: Unit) -> Self {
+   |        ^^^ ---------  -----------
