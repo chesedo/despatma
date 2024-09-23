@@ -8,8 +8,7 @@ use crate::input;
 use self::visitor::{
     AddWildcardLifetime, ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractLifetime,
     ImplTraitButRegisteredConcrete, ImplTraitFields, LinkDependencies, OwningManagedDependency,
-    SetHasExplicitLifetime, SetNeedsGenericLifetime, UnsupportedRegisteredTypes, VisitableMut,
-    WrapBoxType,
+    SetHasExplicitLifetime, UnsupportedRegisteredTypes, VisitableMut, WrapBoxType,
 };
 
 mod visitor;
@@ -17,7 +16,6 @@ mod visitor;
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {
     pub(crate) attrs: Vec<Attribute>,
-    pub(crate) needs_generic_lifetime: bool,
     pub(crate) self_ty: Type,
     pub(crate) dependencies: Vec<Rc<RefCell<Dependency>>>,
 }
@@ -89,7 +87,6 @@ impl From<input::Container> for Container {
 
         Self {
             attrs,
-            needs_generic_lifetime: false,
             self_ty,
             dependencies,
         }
@@ -152,9 +149,6 @@ impl Container {
 
         // Needs lifetimes to be extracted and boxes to be extracted
         self.process_visitor::<SetHasExplicitLifetime>();
-
-        // Needs has_explicit_lifetime to be set
-        self.process_visitor::<SetNeedsGenericLifetime>();
 
         // Needs dependencies to be linked and lifetimes to be extracted
         // But boxes should not be wrapped yet

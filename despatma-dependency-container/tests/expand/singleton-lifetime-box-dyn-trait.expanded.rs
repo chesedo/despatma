@@ -32,13 +32,20 @@ impl<D: DAL> Service<D> {
 }
 struct DependencyContainer<'a> {
     dal: std::rc::Rc<std::cell::OnceCell<std::boxed::Box<dyn DAL + 'a>>>,
+    _phantom: std::marker::PhantomData<&'a ()>,
 }
 impl<'a> DependencyContainer<'a> {
     pub fn new() -> Self {
-        Self { dal: Default::default() }
+        Self {
+            dal: Default::default(),
+            _phantom: Default::default(),
+        }
     }
     pub fn new_scope(&self) -> Self {
-        Self { dal: self.dal.clone() }
+        Self {
+            dal: self.dal.clone(),
+            _phantom: Default::default(),
+        }
     }
     fn create_config(&self) -> Config {
         Config { port: 8080 }
