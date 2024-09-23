@@ -8,7 +8,8 @@ use crate::input;
 use self::visitor::{
     AddWildcardLifetime, ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractLifetime,
     ImplTraitButRegisteredConcrete, ImplTraitFields, LinkDependencies, OwningManagedDependency,
-    SetHasExplicitLifetime, UnsupportedRegisteredTypes, VisitableMut, WrapBoxType,
+    ReplaceImplGenericsWithConcrete, SetHasExplicitLifetime, UnsupportedRegisteredTypes,
+    VisitableMut, WrapBoxType,
 };
 
 mod visitor;
@@ -126,6 +127,9 @@ impl Container {
     pub fn process(&mut self) {
         self.process_visitor::<ExtractLifetime>();
         self.process_visitor::<LinkDependencies>();
+
+        // Needs field types (lifetimes) to be extracted and dependencies to be linked first
+        self.process_visitor::<ReplaceImplGenericsWithConcrete>();
 
         // Needs lifetimes to be extracted first
         self.process_visitor::<ImplTraitFields>();
