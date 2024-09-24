@@ -237,8 +237,6 @@ impl AppContainer {
             .finish();
         tracing::subscriber::set_global_default(subscriber)
             .expect("Failed to set tracing subscriber");
-
-        ()
     }
 
     #[Singleton]
