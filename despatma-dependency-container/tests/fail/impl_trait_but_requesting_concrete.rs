@@ -25,6 +25,7 @@ impl DependencyContainer {
         Config { port: 8080 }
     }
 
+    #[Transient(PostgresDAL)]
     fn dal(&self) -> impl DAL {
         PostgresDAL
     }

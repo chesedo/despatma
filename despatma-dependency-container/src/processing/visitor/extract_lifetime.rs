@@ -11,14 +11,13 @@ impl VisitorMut for ExtractLifetime {
     fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
         // Remove all lifetime attributes
         dependency.attrs.retain(|attr| {
-            let mut field_ty = dependency.ty.clone();
             let path = match &attr.meta {
                 Meta::Path(path) => path,
                 Meta::List(meta_list) => {
                     let custom_type = &meta_list.tokens;
                     let custom_type = parse_quote!(#custom_type);
 
-                    field_ty = custom_type;
+                    dependency.field_ty = custom_type;
 
                     &meta_list.path
                 }
@@ -32,16 +31,17 @@ impl VisitorMut for ExtractLifetime {
             match path.segments[0].ident.to_string().as_str() {
                 "Scoped" => {
                     dependency.lifetime = Lifetime::Scoped(path.segments[0].ident.span());
-                    dependency.field_ty = Some(field_ty);
                     false
                 }
 
                 "Singleton" => {
                     dependency.lifetime = Lifetime::Singleton(path.segments[0].ident.span());
-                    dependency.field_ty = Some(field_ty);
                     false
                 }
-                "Transient" => false,
+                "Transient" => {
+                    dependency.lifetime = Lifetime::Transient(Some(path.segments[0].ident.span()));
+                    false
+                }
                 _ => true,
             }
         });
@@ -106,39 +106,57 @@ mod tests {
         assert_eq!(container.dependencies[0].borrow().attrs.len(), 1);
         assert_eq!(
             container.dependencies[0].borrow().lifetime,
-            Lifetime::Transient
+            Lifetime::Transient(None)
         );
-        assert_eq!(container.dependencies[0].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[0].borrow().field_ty,
+            parse_quote!(Singleton)
+        );
         assert_eq!(container.dependencies[1].borrow().attrs.len(), 1);
         assert_eq!(
             container.dependencies[1].borrow().lifetime,
-            Lifetime::Transient
+            Lifetime::Transient(None)
         );
-        assert_eq!(container.dependencies[1].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[1].borrow().field_ty,
+            parse_quote!(Scoped)
+        );
         assert_eq!(container.dependencies[2].borrow().attrs.len(), 1);
         assert_eq!(
             container.dependencies[2].borrow().lifetime,
-            Lifetime::Transient
+            Lifetime::Transient(None)
         );
-        assert_eq!(container.dependencies[2].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[2].borrow().field_ty,
+            parse_quote!(Transient)
+        );
         assert_eq!(container.dependencies[3].borrow().attrs.len(), 0);
         assert_eq!(
             container.dependencies[3].borrow().lifetime,
-            Lifetime::Transient
+            Lifetime::Transient(None)
         );
-        assert_eq!(container.dependencies[3].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[3].borrow().field_ty,
+            parse_quote!(Default)
+        );
         assert_eq!(container.dependencies[4].borrow().attrs.len(), 1);
         assert_eq!(
             container.dependencies[4].borrow().lifetime,
-            Lifetime::Transient
+            Lifetime::Transient(None)
         );
-        assert_eq!(container.dependencies[4].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[4].borrow().field_ty,
+            parse_quote!(impl SingletonTrait)
+        );
         assert_eq!(container.dependencies[5].borrow().attrs.len(), 1);
         assert_eq!(
             container.dependencies[5].borrow().lifetime,
-            Lifetime::Transient
+            Lifetime::Transient(None)
         );
-        assert_eq!(container.dependencies[5].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[5].borrow().field_ty,
+            parse_quote!(impl ScopedTrait)
+        );
 
         container.apply_mut(&mut ExtractLifetime);
 
@@ -149,7 +167,7 @@ mod tests {
         );
         assert_eq!(
             container.dependencies[0].borrow().field_ty,
-            Some(parse_quote!(Singleton))
+            parse_quote!(Singleton)
         );
         assert_eq!(container.dependencies[1].borrow().attrs.len(), 0);
         assert_eq!(
@@ -158,20 +176,26 @@ mod tests {
         );
         assert_eq!(
             container.dependencies[1].borrow().field_ty,
-            Some(parse_quote!(Scoped))
+            parse_quote!(Scoped)
         );
         assert_eq!(container.dependencies[2].borrow().attrs.len(), 0);
         assert_eq!(
             container.dependencies[2].borrow().lifetime,
-            Lifetime::Transient
+            Lifetime::Transient(Some(Span::call_site()))
         );
-        assert_eq!(container.dependencies[2].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[2].borrow().field_ty,
+            parse_quote!(Transient)
+        );
         assert_eq!(container.dependencies[3].borrow().attrs.len(), 0);
         assert_eq!(
             container.dependencies[3].borrow().lifetime,
-            Lifetime::Transient
+            Lifetime::Transient(None)
         );
-        assert_eq!(container.dependencies[3].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[3].borrow().field_ty,
+            parse_quote!(Default)
+        );
         assert_eq!(container.dependencies[4].borrow().attrs.len(), 0);
         assert_eq!(
             container.dependencies[4].borrow().lifetime,
@@ -179,7 +203,7 @@ mod tests {
         );
         assert_eq!(
             container.dependencies[4].borrow().field_ty,
-            Some(parse_quote!(SingletonStruct))
+            parse_quote!(SingletonStruct)
         );
         assert_eq!(container.dependencies[5].borrow().attrs.len(), 0);
         assert_eq!(
@@ -188,7 +212,7 @@ mod tests {
         );
         assert_eq!(
             container.dependencies[5].borrow().field_ty,
-            Some(parse_quote!(ScopedStruct))
+            parse_quote!(ScopedStruct)
         );
     }
 }

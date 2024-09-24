@@ -754,6 +754,7 @@ pub use despatma_visitor::visitor_mut;
 ///
 /// #[dependency_container]
 /// impl Dependencies {
+///     #[Transient(Sqlite)]
 ///     fn data_layer(&self) -> impl DataLayer {
 ///         Sqlite
 ///     }
@@ -765,7 +766,7 @@ pub use despatma_visitor::visitor_mut;
 /// ```
 ///
 /// The `data_layer` function is now the only thing that ever needs to be modified when changing the concrete
-/// implementation of `DataLayer`.
+/// implementation of `DataLayer`. Note that the macro does need a hint about the concrete type to use for the trait though.
 ///
 /// ### Runtime Abstractions
 ///
@@ -817,6 +818,7 @@ pub use despatma_visitor::visitor_mut;
 /// #       Config { use_sqlite: true }
 /// #   }
 /// #
+///     #[Transient(Box<dyn DataLayer>)]
 ///     fn data_layer(&self, config: Config) -> impl DataLayer {
 ///         let dl: Box<dyn DataLayer> = if config.use_sqlite {
 ///             Box::new(Sqlite)
@@ -997,6 +999,7 @@ pub use despatma_visitor::visitor_mut;
 /// - Async dependencies will cause parent dependencies to become async as well.
 /// - Consider the performance implications of excessive boxing or async calls in your dependency tree.
 ///
+/// More [advanced example are also in the repository](https://github.com/chesedo/despatma/tree/main/despatma/examples).
 /// For more information on dependency injection in Rust, see this article on [Manual Dependency Injection in Rust](https://chesedo.me/blog/manual-dependency-injection-rust/).
 pub use despatma_dependency_container::dependency_container;
 

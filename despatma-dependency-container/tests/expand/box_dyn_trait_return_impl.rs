@@ -32,6 +32,7 @@ impl DependencyContainer {
         Config { port: 8080 }
     }
 
+    #[Transient(Box<dyn DAL>)]
     fn dal(&self) -> impl DAL {
         let d: Box<dyn DAL> = if true {
             Box::new(PostgresDAL)

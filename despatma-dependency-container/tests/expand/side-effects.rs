@@ -2,13 +2,11 @@ struct Config {
     port: u32,
 }
 
-struct Unit;
-
 struct Service;
 
 impl Service {
-    fn new(port: u32, _unit: Unit) -> Self {
-        println!("Service started on port {}", port);
+    fn new(port: u32) -> Self {
+        println!("Service started on port {} with side effect", port);
         Self
     }
 }
@@ -19,12 +17,13 @@ impl DependencyContainer {
         Config { port: 8080 }
     }
 
-    fn unit(&self) -> () {
-        ()
+    #[Singleton]
+    fn _tracing(&self) -> () {
+        println!("Tracing enabled");
     }
 
-    fn service(&self, config: u32, unit: Unit) -> Service {
-        Service::new(config, unit)
+    fn service(&self, _tracing: &(), config: Config) -> Service {
+        Service::new(config.port)
     }
 }
 

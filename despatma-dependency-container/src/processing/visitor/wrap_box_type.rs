@@ -6,7 +6,7 @@ use super::{ErrorVisitorMut, VisitorMut};
 
 /// Correctly restores the boxes that were removed from any types
 ///
-/// Needs to be called after `has_explicit_lifetime` is set.
+/// Needs to happen after boxes and lifetimes are extracted
 pub struct WrapBoxType;
 
 impl VisitorMut for WrapBoxType {
@@ -14,10 +14,11 @@ impl VisitorMut for WrapBoxType {
         if dependency.is_boxed {
             let ty = &dependency.ty;
 
-            if dependency.has_explicit_lifetime {
-                dependency.field_ty = Some(parse_quote!(std::boxed::Box<#ty + 'a>));
+            if dependency.lifetime.is_managed() {
+                dependency.field_ty = parse_quote!(std::boxed::Box<#ty + 'a>);
                 dependency.ty = parse_quote!(std::boxed::Box<#ty + 'a>);
             } else {
+                dependency.field_ty = parse_quote!(std::boxed::Box<#ty>);
                 dependency.ty = parse_quote!(std::boxed::Box<#ty>);
             }
         }
@@ -39,7 +40,7 @@ mod tests {
         input,
         processing::{
             self,
-            visitor::{ExtractBoxType, ExtractLifetime, SetHasExplicitLifetime, VisitableMut},
+            visitor::{ExtractBoxType, ExtractLifetime, VisitableMut},
         },
     };
 
@@ -67,23 +68,25 @@ mod tests {
 
         container.apply_mut(&mut ExtractBoxType);
         container.apply_mut(&mut ExtractLifetime);
-        container.apply_mut(&mut SetHasExplicitLifetime);
 
-        assert!(container.dependencies[0].borrow().has_explicit_lifetime);
         assert_eq!(container.dependencies[0].borrow().ty, parse_quote!(dyn DAL));
         assert_eq!(
             container.dependencies[0].borrow().field_ty,
-            Some(parse_quote!(dyn DAL))
+            parse_quote!(Box<dyn DAL>)
         );
-        assert!(!container.dependencies[1].borrow().has_explicit_lifetime);
         assert_eq!(container.dependencies[1].borrow().ty, parse_quote!(Utc));
-        assert_eq!(container.dependencies[1].borrow().field_ty, None);
-        assert!(!container.dependencies[2].borrow().has_explicit_lifetime);
+        assert_eq!(
+            container.dependencies[1].borrow().field_ty,
+            parse_quote!(Box<Utc>)
+        );
         assert_eq!(
             container.dependencies[2].borrow().ty,
             parse_quote!(Service<impl DAL>),
         );
-        assert_eq!(container.dependencies[2].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[2].borrow().field_ty,
+            parse_quote!(Service<impl DAL>),
+        );
 
         container.apply_mut(&mut WrapBoxType);
 
@@ -93,17 +96,23 @@ mod tests {
         );
         assert_eq!(
             container.dependencies[0].borrow().field_ty,
-            Some(parse_quote!(std::boxed::Box<dyn DAL + 'a>))
+            parse_quote!(std::boxed::Box<dyn DAL + 'a>)
         );
         assert_eq!(
             container.dependencies[1].borrow().ty,
             parse_quote!(std::boxed::Box<Utc>),
         );
-        assert_eq!(container.dependencies[1].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[1].borrow().field_ty,
+            parse_quote!(std::boxed::Box<Utc>)
+        );
         assert_eq!(
             container.dependencies[2].borrow().ty,
             parse_quote!(Service<impl DAL>),
         );
-        assert_eq!(container.dependencies[2].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[2].borrow().field_ty,
+            parse_quote!(Service<impl DAL>)
+        );
     }
 }

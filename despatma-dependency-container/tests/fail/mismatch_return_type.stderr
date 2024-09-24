@@ -1,7 +1,7 @@
 error[E0308]: arguments to this function are incorrect
-  --> tests/fail/mismatch_return_type.rs:25:9
+  --> tests/fail/mismatch_return_type.rs:27:9
    |
-25 |         Service::new(config, unit)
+27 |         Service::new(config, unit)
    |         ^^^^^^^^^^^^ ------  ---- expected `Unit`, found `()`
    |                      |
    |                      expected `u32`, found `Config`

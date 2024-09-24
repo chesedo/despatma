@@ -11,7 +11,6 @@ pub use impl_trait_fields::ImplTraitFields;
 pub use link_dependencies::LinkDependencies;
 pub use owning_managed_dependency::OwningManagedDependency;
 pub use replace_impl_generics_with_concrete::ReplaceImplGenericsWithConcrete;
-pub use set_has_explicit_lifetime::SetHasExplicitLifetime;
 pub use unsupported_registered_types::UnsupportedRegisteredTypes;
 pub use wrap_box_type::WrapBoxType;
 
@@ -24,7 +23,6 @@ mod impl_trait_fields;
 mod link_dependencies;
 mod owning_managed_dependency;
 mod replace_impl_generics_with_concrete;
-mod set_has_explicit_lifetime;
 mod unsupported_registered_types;
 mod wrap_box_type;
 

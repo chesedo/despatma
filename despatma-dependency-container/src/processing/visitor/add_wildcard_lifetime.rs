@@ -1,4 +1,11 @@
-use syn::{parse_quote, GenericArgument, PathArguments, Type, TypeImplTrait, TypeTraitObject};
+use std::collections::HashSet;
+
+use syn::{
+    parse_quote,
+    punctuated::Punctuated,
+    visit_mut::{visit_type_impl_trait_mut, VisitMut},
+    Token, Type, TypeImplTrait, TypeParamBound,
+};
 
 use crate::processing::Dependency;
 
@@ -10,49 +17,55 @@ use super::{ErrorVisitorMut, VisitorMut};
 /// Needs to be called after lifetimes are extracted.
 /// And after dependencies are linked.
 /// Needs to be called before boxes are wrapped again.
-pub struct AddWildcardLifetime;
+pub struct AddWildcardLifetime {
+    adder: Adder,
+}
 
 impl VisitorMut for AddWildcardLifetime {
     fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
-        let Type::Path(path) = &mut dependency.ty else {
-            return;
-        };
-
-        let Some(last_segment) = path.path.segments.last_mut() else {
-            return;
-        };
-
-        let PathArguments::AngleBracketed(generics) = &mut last_segment.arguments else {
-            return;
-        };
-
-        let deps_needing_wildcard_lifetime: Vec<_> = dependency
-            .dependencies
-            .iter()
-            .filter(|dep| dep.inner.borrow().lifetime.is_managed())
-            .map(|dep| dep.inner.borrow().ty.clone())
-            .filter_map(|ty| match ty {
-                Type::TraitObject(TypeTraitObject { bounds, .. }) => Some(bounds),
-                Type::ImplTrait(TypeImplTrait { bounds, .. }) => Some(bounds),
-                _ => None,
-            })
-            .collect();
-
-        for arg in generics.args.iter_mut() {
-            let GenericArgument::Type(Type::ImplTrait(type_impl_trait)) = arg else {
-                continue;
-            };
-
-            if deps_needing_wildcard_lifetime.contains(&type_impl_trait.bounds) {
-                type_impl_trait.bounds.push(parse_quote!('_));
+        if dependency.lifetime.is_managed() {
+            if let Type::ImplTrait(type_impl_trait) = &dependency.ty {
+                self.adder.to_add.insert(type_impl_trait.bounds.clone());
+                return;
             }
+            // Also fix up `dyn Trait` that was exctracted from boxes
+            if let Type::TraitObject(type_trait_object) = &dependency.ty {
+                self.adder.to_add.insert(type_trait_object.bounds.clone());
+                return;
+            }
+        }
+
+        // Replace children first as they might have an impact on this type
+        for dependency in dependency.dependencies.iter_mut() {
+            self.visit_dependency_mut(&mut dependency.inner.borrow_mut());
+        }
+
+        self.adder.visit_type_mut(&mut dependency.ty);
+    }
+}
+
+struct Adder {
+    to_add: HashSet<Punctuated<TypeParamBound, Token![+]>>,
+}
+
+impl VisitMut for Adder {
+    fn visit_type_impl_trait_mut(&mut self, type_impl_trait: &mut TypeImplTrait) {
+        if self.to_add.contains(&type_impl_trait.bounds) {
+            type_impl_trait.bounds.push(parse_quote!('a));
+        } else {
+            // Continue checking for any impl types on inner generics
+            visit_type_impl_trait_mut(self, type_impl_trait);
         }
     }
 }
 
 impl ErrorVisitorMut for AddWildcardLifetime {
     fn new() -> Self {
-        Self
+        Self {
+            adder: Adder {
+                to_add: Default::default(),
+            },
+        }
     }
 }
 
@@ -89,8 +102,14 @@ mod tests {
                     Box::new(Utc::now())
                 }
 
-                fn service(&self, dal: impl DAL, config: impl Config, datetime: Utc) -> Service<impl DAL, impl Config> {
-                    Service::new(dal, config, datetime)
+                // Needed to check nested types are updated correctly in `service` below
+                #[Scope]
+                fn presenter(&self, config: impl Config) -> Presenter<impl Config> {
+                    Presenter::new(config)
+                }
+
+                fn service(&self, dal: impl DAL, config: impl Config, datetime: Utc, presenter: Presenter<impl Config>) -> Service<impl DAL, impl Config, Presenter<impl Config>> {
+                    Service::new(dal, config, datetime, presenter)
                 }
             }
         ))
@@ -108,10 +127,14 @@ mod tests {
         assert_eq!(container.dependencies[2].borrow().ty, parse_quote!(Utc));
         assert_eq!(
             container.dependencies[3].borrow().ty,
-            parse_quote!(Service<impl DAL, impl Config>),
+            parse_quote!(Presenter<impl Config>),
+        );
+        assert_eq!(
+            container.dependencies[4].borrow().ty,
+            parse_quote!(Service<impl DAL, impl Config, Presenter<impl Config>>),
         );
 
-        container.apply_mut(&mut AddWildcardLifetime);
+        container.apply_mut(&mut AddWildcardLifetime::new());
 
         assert_eq!(container.dependencies[0].borrow().ty, parse_quote!(dyn DAL));
         assert_eq!(
@@ -121,7 +144,11 @@ mod tests {
         assert_eq!(container.dependencies[2].borrow().ty, parse_quote!(Utc));
         assert_eq!(
             container.dependencies[3].borrow().ty,
-            parse_quote!(Service<impl DAL + '_, impl Config + '_>),
+            parse_quote!(Presenter<impl Config + 'a>),
+        );
+        assert_eq!(
+            container.dependencies[4].borrow().ty,
+            parse_quote!(Service<impl DAL + 'a, impl Config + 'a, Presenter<impl Config + 'a>>),
         );
     }
 }

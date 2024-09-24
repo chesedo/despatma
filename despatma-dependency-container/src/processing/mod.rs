@@ -8,8 +8,7 @@ use crate::input;
 use self::visitor::{
     AddWildcardLifetime, ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractLifetime,
     ImplTraitButRegisteredConcrete, ImplTraitFields, LinkDependencies, OwningManagedDependency,
-    ReplaceImplGenericsWithConcrete, SetHasExplicitLifetime, UnsupportedRegisteredTypes,
-    VisitableMut, WrapBoxType,
+    ReplaceImplGenericsWithConcrete, UnsupportedRegisteredTypes, VisitableMut, WrapBoxType,
 };
 
 mod visitor;
@@ -29,10 +28,9 @@ pub struct Dependency {
     pub(crate) block: Block,
     pub(crate) is_async: bool,
     pub(crate) is_boxed: bool,
-    pub(crate) has_explicit_lifetime: bool,
     pub(crate) lifetime: Lifetime,
     pub(crate) ty: Type,
-    pub(crate) field_ty: Option<Type>,
+    pub(crate) field_ty: Type,
     pub(crate) dependencies: Vec<ChildDependency>,
 }
 
@@ -46,7 +44,7 @@ pub struct ChildDependency {
 #[derive(Clone)]
 #[cfg_attr(test, derive(Debug))]
 pub enum Lifetime {
-    Transient,
+    Transient(Option<Span>),
     Scoped(Span),
     Singleton(Span),
 }
@@ -55,7 +53,8 @@ impl PartialEq for Lifetime {
     fn eq(&self, other: &Self) -> bool {
         matches!(
             (self, other),
-            (Self::Transient, Self::Transient)
+            (Self::Transient(Some(_)), Self::Transient(Some(_)))
+                | (Self::Transient(None), Self::Transient(None))
                 | (Self::Scoped(_), Self::Scoped(_))
                 | (Self::Singleton(_), Self::Singleton(_))
         )
@@ -114,10 +113,9 @@ impl From<ImplItemFn> for Dependency {
             block,
             is_async: false,
             is_boxed: false,
-            has_explicit_lifetime: false,
-            lifetime: Lifetime::Transient,
+            lifetime: Lifetime::Transient(None),
+            field_ty: ty.clone(),
             ty,
-            field_ty: None,
             dependencies: vec![],
         }
     }
@@ -147,14 +145,11 @@ impl Container {
         self.process_visitor::<ExtractBoxType>();
         self.process_visitor::<UnsupportedRegisteredTypes>();
 
-        // Needs lifetimes to be extracted and boxes to be extracted
-        self.process_visitor::<SetHasExplicitLifetime>();
-
         // Needs dependencies to be linked and lifetimes to be extracted
         // But boxes should not be wrapped yet
         self.process_visitor::<AddWildcardLifetime>();
 
-        // Needs has_explicit_lifetime to be set
+        // Needs lifetimes and boxes to be extracted first
         self.process_visitor::<WrapBoxType>();
     }
 

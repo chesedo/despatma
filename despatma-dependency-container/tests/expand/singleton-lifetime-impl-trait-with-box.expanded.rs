@@ -47,19 +47,23 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    pub fn config(&self) -> Config {
-        { Config { port: 8080 } }
+    pub fn config(&'a self) -> Config {
+        Config { port: 8080 }
     }
-    pub fn dal(&self) -> &impl DAL {
+    pub fn dal(&'a self) -> &impl DAL {
         self.dal
             .get_or_init(|| {
                 if true { Box::new(PostgresDAL) } else { Box::new(SQLiteDAL) }
             })
     }
-    pub fn service(&self) -> Service<impl DAL + '_> {
-        let config = self.config();
-        let dal = self.dal();
-        { Service::new(config.port, dal) }
+    pub fn service(&'a self) -> Service<impl DAL + 'a> {
+        let config = Config { port: 8080 };
+        let dal = self
+            .dal
+            .get_or_init(|| {
+                if true { Box::new(PostgresDAL) } else { Box::new(SQLiteDAL) }
+            });
+        Service::new(config.port, dal)
     }
 }
 fn main() {

@@ -20,13 +20,9 @@ struct Error {
 
 impl VisitorMut for ImplTraitFields {
     fn visit_dependency_mut(&mut self, dependency: &mut Dependency) {
-        let Some(field_ty) = &dependency.field_ty else {
-            return;
-        };
-
-        if let Type::ImplTrait(_) = field_ty {
+        if let Type::ImplTrait(_) = dependency.field_ty {
             self.errors.push(Error {
-                ty: field_ty.clone(),
+                ty: dependency.field_ty.clone(),
                 lifetime: dependency.lifetime.clone(),
             });
         }
@@ -59,7 +55,20 @@ impl ErrorVisitorMut for ImplTraitFields {
                         example = "#[Singleton(SingletonType)]"
                     );
                 }
-                _ => {}
+                Lifetime::Transient(Some(span)) => {
+                    emit_error!(
+                        ty, "Need to know which type to store for anything which might depend on this transient dependency";
+                        hint = span => "Consider adding a type hint to the lifetime attribute";
+                        example = "#[Transient(TransientType)]"
+                    );
+                }
+                Lifetime::Transient(None) => {
+                    emit_error!(
+                        ty, "Need to know which type to store for anything which might depend on this transient dependency";
+                        hint = "Add a transient lifetime attribute with a hint type";
+                        example = "#[Transient(TransientType)]"
+                    );
+                }
             }
         }
     }
@@ -113,6 +122,15 @@ mod tests {
                 fn scoped(&self) -> impl ScopedTrait {
                     ScopedStruct
                 }
+
+                #[Transient]
+                fn transient_impl_trait(&self) -> impl TransientTrait {
+                    TransientStruct
+                }
+
+                fn default_impl_trait(&self) -> impl DefaultTrait {
+                    DefaultStruct
+                }
             }
         ))
         .into();
@@ -132,6 +150,14 @@ mod tests {
                 Error {
                     ty: parse_quote!(impl ScopedTrait),
                     lifetime: Lifetime::Scoped(Span::call_site())
+                },
+                Error {
+                    ty: parse_quote!(impl TransientTrait),
+                    lifetime: Lifetime::Transient(Some(Span::call_site()))
+                },
+                Error {
+                    ty: parse_quote!(impl DefaultTrait),
+                    lifetime: Lifetime::Transient(None)
                 }
             ]
         )

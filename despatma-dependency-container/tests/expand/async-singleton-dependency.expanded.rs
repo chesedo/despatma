@@ -31,19 +31,23 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    pub async fn config(&self) -> &Config {
+    pub async fn config(&'a self) -> &Config {
         self.config
             .get_or_init(async {
-                {
-                    sleep(Duration::from_millis(10)).await;
-                    Config { port: 8080 }
-                }
+                sleep(Duration::from_millis(10)).await;
+                Config { port: 8080 }
             })
             .await
     }
-    pub async fn service(&self) -> Service {
-        let config = self.config().await;
-        { Service::new(config.port) }
+    pub async fn service(&'a self) -> Service {
+        let config = self
+            .config
+            .get_or_init(async {
+                sleep(Duration::from_millis(10)).await;
+                Config { port: 8080 }
+            })
+            .await;
+        Service::new(config.port)
     }
 }
 fn main() {
