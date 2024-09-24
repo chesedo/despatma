@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use syn::{
+    parse_quote,
     visit_mut::{visit_type_mut, VisitMut},
     Type,
 };
@@ -46,7 +47,7 @@ struct Replacer {
 impl VisitMut for Replacer {
     fn visit_type_mut(&mut self, ty: &mut Type) {
         if let Some(concrete_type) = self.to_replace.get(ty) {
-            *ty = concrete_type.clone();
+            *ty = parse_quote! { &'a #concrete_type };
         } else {
             // Continue checking for any impl types on inner generics
             visit_type_mut(self, ty);
@@ -117,7 +118,7 @@ mod tests {
         );
         assert_eq!(
             container.dependencies[1].borrow().field_ty,
-            Some(parse_quote!(Service<Sqlite>))
+            Some(parse_quote!(Service<&'a Sqlite>))
         );
     }
 }

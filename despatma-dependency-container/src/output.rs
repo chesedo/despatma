@@ -5,8 +5,9 @@ use quote::{quote, ToTokens};
 use syn::{
     parse_quote, parse_str,
     punctuated::Punctuated,
-    token::{Async, Await, Fn, Paren},
-    Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident, Path, Signature, Token, Type,
+    token::{Async, Fn, Paren},
+    Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident, Path, Signature, Stmt, Token,
+    Type,
 };
 
 use crate::processing::{self, Lifetime};
@@ -27,7 +28,7 @@ pub struct Container {
     dependencies: Vec<Dependency>,
 }
 
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
+#[cfg_attr(test, derive(Eq, PartialEq, Debug, Clone))]
 pub struct Dependency {
     attrs: Vec<Attribute>,
     block: Block,
@@ -39,13 +40,7 @@ pub struct Dependency {
     ty: Type,
     create_asyncness: Option<Async>,
     is_managed: bool,
-    dependencies: Vec<ChildDependency>,
-}
-
-#[cfg_attr(test, derive(Eq, PartialEq, Debug))]
-pub struct ChildDependency {
-    ident: Ident,
-    awaitness: Option<Await>,
+    dependencies: Vec<Dependency>,
 }
 
 impl From<processing::Container> for Container {
@@ -233,7 +228,7 @@ impl From<processing::Dependency> for Dependency {
 
         let dependencies = dependencies
             .into_iter()
-            .map(ChildDependency::from)
+            .map(|d| d.inner.borrow().clone().into())
             .collect();
 
         Self {
@@ -249,20 +244,6 @@ impl From<processing::Dependency> for Dependency {
             is_managed,
             dependencies,
         }
-    }
-}
-
-impl From<processing::ChildDependency> for ChildDependency {
-    fn from(child_dependency: processing::ChildDependency) -> Self {
-        let dep_ref = child_dependency.inner.borrow();
-        let ident = dep_ref.sig.ident.clone();
-        let awaitness = if dep_ref.is_async {
-            Some(<Token![await]>::default())
-        } else {
-            None
-        };
-
-        Self { ident, awaitness }
     }
 }
 
@@ -309,16 +290,16 @@ impl ToTokens for Dependency {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
             attrs,
-            block,
+            block: _,
             asyncness,
             fn_token,
             ident,
             paren_token,
             inputs,
             ty,
-            create_asyncness,
-            is_managed,
-            dependencies,
+            create_asyncness: _,
+            is_managed: _,
+            dependencies: _,
         } = self;
 
         // Do the same thing `syn` does for the paren_token
@@ -328,20 +309,61 @@ impl ToTokens for Dependency {
             inputs.to_tokens(tokens);
         });
 
+        let stmts = self.to_stmts();
+
+        tokens.extend(quote!(
+            #(#attrs)*
+            pub #asyncness #fn_token #ident(&self) -> #ty {
+                #(#stmts);*
+            }
+        ));
+    }
+}
+
+impl Dependency {
+    fn to_stmts(&self) -> Vec<Stmt> {
+        let Self {
+            attrs: _,
+            block,
+            asyncness: _,
+            fn_token: _,
+            ident,
+            paren_token: _,
+            inputs: _,
+            ty: _,
+            create_asyncness,
+            is_managed,
+            dependencies,
+        } = self;
+
         let create_dependencies: Vec<_> = dependencies
             .iter()
             .map(|child_dependency| {
-                let ChildDependency { ident, awaitness } = child_dependency;
+                let stmts = child_dependency.to_stmts();
+                let ident = &child_dependency.ident;
 
-                let awaitness = awaitness.map(|awaitness| quote! { .#awaitness });
+                let block = if stmts.len() == 1 {
+                    let stmt = &stmts[0];
+
+                    quote! { #stmt }
+                } else {
+                    quote! { {  #(#stmts);* } }
+                };
 
                 let create_stmt = quote! {
-                    let #ident = self.#ident()#awaitness;
+                    let #ident = #block;
                 };
 
                 create_stmt
             })
             .collect();
+
+        let block = if block.stmts.len() == 1 {
+            let stmt = &block.stmts[0];
+            quote! { #stmt }
+        } else {
+            quote! { #block }
+        };
 
         // Figure out the correct final statement
         let final_stmt = if *is_managed {
@@ -360,14 +382,11 @@ impl ToTokens for Dependency {
             }
         };
 
-        tokens.extend(quote!(
-            #(#attrs)*
-            pub #asyncness #fn_token #ident(&self) -> #ty {
-                #(#create_dependencies)*
+        parse_quote! {
+            #(#create_dependencies)*
 
-                #final_stmt
-            }
-        ));
+            #final_stmt
+        }
     }
 }
 
@@ -452,6 +471,32 @@ mod tests {
             };
             named.named
         };
+        let config = Dependency {
+            attrs: vec![],
+            block: parse_quote!({ Config::new().await }),
+            asyncness: Some(parse_quote!(async)),
+            fn_token: parse_quote!(fn),
+            ident: parse_quote!(config),
+            paren_token: Default::default(),
+            inputs: parse_quote!(&self),
+            ty: parse_quote!(&Config),
+            create_asyncness: Some(parse_quote!(async)),
+            is_managed: true,
+            dependencies: vec![],
+        };
+        let db = Dependency {
+            attrs: vec![],
+            block: parse_quote!({ Sqlite::new(config.conn_str) }),
+            asyncness: Some(parse_quote!(async)),
+            fn_token: parse_quote!(fn),
+            ident: parse_quote!(db),
+            paren_token: Default::default(),
+            inputs: parse_quote!(&self, config: &Config),
+            ty: parse_quote!(&Sqlite),
+            create_asyncness: None,
+            is_managed: true,
+            dependencies: vec![config.clone()],
+        };
         let expected = super::Container {
             attrs: vec![],
             self_ty: parse_quote! { Container },
@@ -459,35 +504,8 @@ mod tests {
             constructors: parse_quote!( config: Default::default(), db: Default::default(), ),
             scope_constructors: parse_quote!( config: self.config.clone(), db: self.db.clone(), ),
             dependencies: vec![
-                Dependency {
-                    attrs: vec![],
-                    block: parse_quote!({ Config::new().await }),
-                    asyncness: Some(parse_quote!(async)),
-                    fn_token: parse_quote!(fn),
-                    ident: parse_quote!(config),
-                    paren_token: Default::default(),
-                    inputs: parse_quote!(&self),
-                    ty: parse_quote!(&Config),
-                    create_asyncness: Some(parse_quote!(async)),
-                    is_managed: true,
-                    dependencies: vec![],
-                },
-                Dependency {
-                    attrs: vec![],
-                    block: parse_quote!({ Sqlite::new(config.conn_str) }),
-                    asyncness: Some(parse_quote!(async)),
-                    fn_token: parse_quote!(fn),
-                    ident: parse_quote!(db),
-                    paren_token: Default::default(),
-                    inputs: parse_quote!(&self, config: &Config),
-                    ty: parse_quote!(&Sqlite),
-                    create_asyncness: None,
-                    is_managed: true,
-                    dependencies: vec![ChildDependency {
-                        ident: parse_quote!(config),
-                        awaitness: Some(parse_quote!(await)),
-                    }],
-                },
+                config,
+                db.clone(),
                 Dependency {
                     attrs: vec![],
                     block: parse_quote!({ Service::new(db) }),
@@ -499,10 +517,7 @@ mod tests {
                     ty: parse_quote!(Service),
                     create_asyncness: None,
                     is_managed: false,
-                    dependencies: vec![ChildDependency {
-                        ident: parse_quote!(db),
-                        awaitness: Some(parse_quote!(await)),
-                    }],
+                    dependencies: vec![db],
                 },
             ],
         };

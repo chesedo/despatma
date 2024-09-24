@@ -33,11 +33,13 @@ impl DependencyContainer {
     }
 
     fn dal(&self) -> Box<dyn DAL> {
-        if true {
+        let b: Box<dyn DAL> = if true {
             Box::new(PostgresDAL)
         } else {
             Box::new(SQLiteDAL)
-        }
+        };
+
+        b
     }
 
     fn service(&self, config: Config, dal: impl DAL) -> Service<impl DAL> {

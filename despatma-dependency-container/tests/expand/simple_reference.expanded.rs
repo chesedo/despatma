@@ -25,11 +25,11 @@ impl<'a> Dependencies<'a> {
         }
     }
     pub fn configuration(&self) -> Configuration {
-        { Configuration { port: 8080 } }
+        Configuration { port: 8080 }
     }
     pub fn task(&self) -> Task {
-        let configuration = self.configuration();
-        { Task::new(configuration.port) }
+        let configuration = Configuration { port: 8080 };
+        Task::new(configuration.port)
     }
 }
 fn main() {

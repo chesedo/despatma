@@ -25,11 +25,11 @@ impl<'a> DependencyContainer<'a> {
         }
     }
     pub fn config(&self) -> Config {
-        { Config { port: 8080 } }
+        Config { port: 8080 }
     }
     pub fn service(&self) -> Service {
-        let config = self.config();
-        { Service::new(config.port) }
+        let config = Config { port: 8080 };
+        Service::new(config.port)
     }
 }
 fn main() {

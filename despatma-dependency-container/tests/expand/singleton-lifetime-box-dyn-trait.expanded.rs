@@ -48,7 +48,7 @@ impl<'a> DependencyContainer<'a> {
         }
     }
     pub fn config(&self) -> Config {
-        { Config { port: 8080 } }
+        Config { port: 8080 }
     }
     pub fn dal(&self) -> &std::boxed::Box<dyn DAL + 'a> {
         self.dal
@@ -57,9 +57,13 @@ impl<'a> DependencyContainer<'a> {
             })
     }
     pub fn service(&self) -> Service<impl DAL + '_> {
-        let config = self.config();
-        let dal = self.dal();
-        { Service::new(config.port, dal) }
+        let config = Config { port: 8080 };
+        let dal = self
+            .dal
+            .get_or_init(|| {
+                if true { Box::new(PostgresDAL) } else { Box::new(SQLiteDAL) }
+            });
+        Service::new(config.port, dal)
     }
 }
 fn main() {
