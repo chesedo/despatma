@@ -34,12 +34,6 @@ pub struct Dependency {
     pub(crate) dependencies: Vec<ChildDependency>,
 }
 
-impl Dependency {
-    pub fn box_needs_explicit_lifetime(&self) -> bool {
-        self.is_boxed && self.lifetime.is_managed()
-    }
-}
-
 #[derive(Clone)]
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct ChildDependency {

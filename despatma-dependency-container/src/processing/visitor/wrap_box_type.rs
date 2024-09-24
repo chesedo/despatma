@@ -14,7 +14,7 @@ impl VisitorMut for WrapBoxType {
         if dependency.is_boxed {
             let ty = &dependency.ty;
 
-            if dependency.box_needs_explicit_lifetime() {
+            if dependency.lifetime.is_managed() {
                 dependency.field_ty = parse_quote!(std::boxed::Box<#ty + 'a>);
                 dependency.ty = parse_quote!(std::boxed::Box<#ty + 'a>);
             } else {
