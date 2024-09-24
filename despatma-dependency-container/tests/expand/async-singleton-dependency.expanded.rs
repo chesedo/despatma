@@ -34,10 +34,8 @@ impl<'a> DependencyContainer<'a> {
     pub async fn config(&self) -> &Config {
         self.config
             .get_or_init(async {
-                {
-                    sleep(Duration::from_millis(10)).await;
-                    Config { port: 8080 }
-                }
+                sleep(Duration::from_millis(10)).await;
+                Config { port: 8080 }
             })
             .await
     }
@@ -45,10 +43,8 @@ impl<'a> DependencyContainer<'a> {
         let config = self
             .config
             .get_or_init(async {
-                {
-                    sleep(Duration::from_millis(10)).await;
-                    Config { port: 8080 }
-                }
+                sleep(Duration::from_millis(10)).await;
+                Config { port: 8080 }
             })
             .await;
         Service::new(config.port)

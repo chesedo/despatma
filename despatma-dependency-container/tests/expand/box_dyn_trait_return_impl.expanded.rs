@@ -42,14 +42,12 @@ impl<'a> DependencyContainer<'a> {
         Config { port: 8080 }
     }
     pub fn dal(&self) -> impl DAL {
-        {
-            let d: Box<dyn DAL> = if true {
-                Box::new(PostgresDAL)
-            } else {
-                Box::new(SQLiteDAL)
-            };
-            d
-        }
+        let d: Box<dyn DAL> = if true {
+            Box::new(PostgresDAL)
+        } else {
+            Box::new(SQLiteDAL)
+        };
+        d
     }
     pub fn service(&self) -> Service<impl DAL> {
         let config = Config { port: 8080 };

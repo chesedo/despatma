@@ -358,12 +358,8 @@ impl Dependency {
             })
             .collect();
 
-        let block = if block.stmts.len() == 1 {
-            let stmt = &block.stmts[0];
-            quote! { #stmt }
-        } else {
-            quote! { #block }
-        };
+        let stmts = &block.stmts;
+        let block = quote! { #(#stmts);* };
 
         // Figure out the correct final statement
         let final_stmt = if *is_managed {
