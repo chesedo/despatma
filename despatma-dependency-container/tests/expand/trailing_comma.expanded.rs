@@ -28,13 +28,13 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    pub fn configuration(&self) -> Configuration {
+    pub fn configuration(&'a self) -> Configuration {
         Configuration { port: 8080 }
     }
-    pub fn my_data_layer_over_socket(&self) -> MyDataLayerOverSocket {
+    pub fn my_data_layer_over_socket(&'a self) -> MyDataLayerOverSocket {
         MyDataLayerOverSocket
     }
-    pub fn service(&self) -> Service {
+    pub fn service(&'a self) -> Service {
         let configuration = Configuration { port: 8080 };
         let my_data_layer_over_socket = MyDataLayerOverSocket;
         Service::new(configuration.port, my_data_layer_over_socket)

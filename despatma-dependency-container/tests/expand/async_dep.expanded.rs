@@ -26,11 +26,11 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    pub async fn config(&self) -> Config {
+    pub async fn config(&'a self) -> Config {
         sleep(Duration::from_millis(10)).await;
         Config { port: 8080 }
     }
-    pub async fn service(&self) -> Service {
+    pub async fn service(&'a self) -> Service {
         let config = {
             sleep(Duration::from_millis(10)).await;
             Config { port: 8080 }

@@ -31,7 +31,7 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    pub async fn config(&self) -> &Config {
+    pub async fn config(&'a self) -> &Config {
         self.config
             .get_or_init(async {
                 sleep(Duration::from_millis(10)).await;
@@ -39,7 +39,7 @@ impl<'a> DependencyContainer<'a> {
             })
             .await
     }
-    pub async fn service(&self) -> Service {
+    pub async fn service(&'a self) -> Service {
         let config = self
             .config
             .get_or_init(async {

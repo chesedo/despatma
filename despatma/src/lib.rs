@@ -997,6 +997,7 @@ pub use despatma_visitor::visitor_mut;
 /// - Async dependencies will cause parent dependencies to become async as well.
 /// - Consider the performance implications of excessive boxing or async calls in your dependency tree.
 ///
+/// More [advanced example are also in the repository](https://github.com/chesedo/despatma/tree/main/despatma/examples).
 /// For more information on dependency injection in Rust, see this article on [Manual Dependency Injection in Rust](https://chesedo.me/blog/manual-dependency-injection-rust/).
 pub use despatma_dependency_container::dependency_container;
 

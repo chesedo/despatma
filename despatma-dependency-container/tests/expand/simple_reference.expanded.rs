@@ -24,10 +24,10 @@ impl<'a> Dependencies<'a> {
             _phantom: Default::default(),
         }
     }
-    pub fn configuration(&self) -> Configuration {
+    pub fn configuration(&'a self) -> Configuration {
         Configuration { port: 8080 }
     }
-    pub fn task(&self) -> Task {
+    pub fn task(&'a self) -> Task {
         let configuration = Configuration { port: 8080 };
         Task::new(configuration.port)
     }

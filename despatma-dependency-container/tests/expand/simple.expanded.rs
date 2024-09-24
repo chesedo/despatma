@@ -24,10 +24,10 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    pub fn config(&self) -> Config {
+    pub fn config(&'a self) -> Config {
         Config { port: 8080 }
     }
-    pub fn service(&self) -> Service {
+    pub fn service(&'a self) -> Service {
         let config = Config { port: 8080 };
         Service::new(config.port)
     }

@@ -38,10 +38,10 @@ impl<'a> DependencyContainer<'a> {
             _phantom: Default::default(),
         }
     }
-    pub fn config(&self) -> Config {
+    pub fn config(&'a self) -> Config {
         Config { port: 8080 }
     }
-    pub fn dal(&self) -> std::boxed::Box<dyn DAL> {
+    pub fn dal(&'a self) -> std::boxed::Box<dyn DAL> {
         let b: Box<dyn DAL> = if true {
             Box::new(PostgresDAL)
         } else {
@@ -49,7 +49,7 @@ impl<'a> DependencyContainer<'a> {
         };
         b
     }
-    pub fn service(&self) -> Service<impl DAL> {
+    pub fn service(&'a self) -> Service<impl DAL> {
         let config = Config { port: 8080 };
         let dal = {
             let b: Box<dyn DAL> = if true {

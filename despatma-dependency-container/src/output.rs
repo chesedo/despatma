@@ -313,7 +313,7 @@ impl ToTokens for Dependency {
 
         tokens.extend(quote!(
             #(#attrs)*
-            pub #asyncness #fn_token #ident(&self) -> #ty {
+            pub #asyncness #fn_token #ident(&'a self) -> #ty {
                 #(#stmts);*
             }
         ));
