@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4](https://github.com/chesedo/despatma/compare/despatma-dependency-container-v0.3.3...despatma-dependency-container-v0.3.4) - 2024-09-24
+
+### Added
+
+- *(di)* nested impl traits ([#31](https://github.com/chesedo/despatma/pull/31))
+
+### Other
+
+- *(di)* `impl Trait` in generics not fixed correctly ([#30](https://github.com/chesedo/despatma/pull/30))
+- *(di)* don't generate a private create method ([#29](https://github.com/chesedo/despatma/pull/29))
+- *(di)* always have a generic lifetime ([#28](https://github.com/chesedo/despatma/pull/28))
+- *(di)* incorrectly using async_once_cell on async call tree ([#26](https://github.com/chesedo/despatma/pull/26))
+
 ## [0.3.3](https://github.com/chesedo/despatma/compare/despatma-dependency-container-v0.3.2...despatma-dependency-container-v0.3.3) - 2024-09-18
 
 ### Added
