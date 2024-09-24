@@ -754,6 +754,7 @@ pub use despatma_visitor::visitor_mut;
 ///
 /// #[dependency_container]
 /// impl Dependencies {
+///     #[Transient(Sqlite)]
 ///     fn data_layer(&self) -> impl DataLayer {
 ///         Sqlite
 ///     }
@@ -765,7 +766,7 @@ pub use despatma_visitor::visitor_mut;
 /// ```
 ///
 /// The `data_layer` function is now the only thing that ever needs to be modified when changing the concrete
-/// implementation of `DataLayer`.
+/// implementation of `DataLayer`. Note that the macro does need a hint about the concrete type to use for the trait though.
 ///
 /// ### Runtime Abstractions
 ///
@@ -817,6 +818,7 @@ pub use despatma_visitor::visitor_mut;
 /// #       Config { use_sqlite: true }
 /// #   }
 /// #
+///     #[Transient(Box<dyn DataLayer>)]
 ///     fn data_layer(&self, config: Config) -> impl DataLayer {
 ///         let dl: Box<dyn DataLayer> = if config.use_sqlite {
 ///             Box::new(Sqlite)
