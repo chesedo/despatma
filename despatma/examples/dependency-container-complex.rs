@@ -1,7 +1,9 @@
 use auto_impl::auto_impl;
 use despatma::dependency_container;
-use std::sync::Arc;
+use std::{fmt::Display, sync::Arc};
 use tokio::sync::Mutex;
+use tracing::{info, Level};
+use tracing_subscriber::FmtSubscriber;
 
 // Entities Layer
 #[derive(Clone)]
@@ -121,9 +123,9 @@ impl UserRepository for InMemoryUserRepository {
     }
 }
 
-struct ConsoleUserPresenter;
+struct OneLinePresenter;
 
-impl UserPresenter for ConsoleUserPresenter {
+impl UserPresenter for OneLinePresenter {
     fn present_user(&self, user: &User) -> String {
         format!(
             "User {}: {} ({}, age {})",
@@ -136,38 +138,34 @@ impl UserPresenter for ConsoleUserPresenter {
     }
 }
 
-trait Logger: Send + Sync {
-    fn log(&self, message: &str);
+enum Action {
+    Get,
+    Create,
 }
 
-struct ConsoleLogger;
-
-impl Logger for ConsoleLogger {
-    fn log(&self, message: &str) {
-        println!("[LOG]: {}", message);
+impl Display for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Action::Get => write!(f, "Get"),
+            Action::Create => write!(f, "Create"),
+        }
     }
 }
 
 struct WebFramework<R, P> {
     user_controller: Arc<UserController<R, P>>,
-    logger: Arc<dyn Logger>,
     request_count: Arc<Mutex<u32>>,
 }
 
 impl<R: UserRepository, P: UserPresenter> WebFramework<R, P> {
-    fn new(
-        user_controller: Arc<UserController<R, P>>,
-        logger: Arc<dyn Logger>,
-        request_count: Arc<Mutex<u32>>,
-    ) -> Self {
+    fn new(user_controller: Arc<UserController<R, P>>, request_count: Arc<Mutex<u32>>) -> Self {
         Self {
             user_controller,
-            logger,
             request_count,
         }
     }
 
-    async fn handle_request(&self, action: &str, params: &[String]) -> String {
+    async fn handle_request(&self, action: Action, params: &[String]) -> String {
         let count = {
             let mut rc = self.request_count.lock().await;
             *rc += 1;
@@ -175,14 +173,14 @@ impl<R: UserRepository, P: UserPresenter> WebFramework<R, P> {
         };
 
         let response = match action {
-            "get" => {
+            Action::Get => {
                 if let Some(id) = params.first().and_then(|s| s.parse().ok()) {
                     self.user_controller.get_user(id).await
                 } else {
                     "Invalid user ID".to_string()
                 }
             }
-            "create" => {
+            Action::Create => {
                 if params.len() == 3 {
                     if let Ok(age) = params[2].parse() {
                         self.user_controller
@@ -195,11 +193,9 @@ impl<R: UserRepository, P: UserPresenter> WebFramework<R, P> {
                     "Invalid parameters for user creation".to_string()
                 }
             }
-            _ => "Unknown action".to_string(),
         };
 
-        self.logger
-            .log(&format!("Handled request #{} - Action: {}", count, action));
+        info!(request_number = count, action = %action, "Handled request");
         format!("{} (Request #{})", response, count)
     }
 }
@@ -219,9 +215,9 @@ impl AppContainer {
         UserService::new(user_repository)
     }
 
-    #[Transient(ConsoleUserPresenter)]
+    #[Transient(OneLinePresenter)]
     fn user_presenter(&self) -> impl UserPresenter {
-        ConsoleUserPresenter
+        OneLinePresenter
     }
 
     #[Singleton]
@@ -233,9 +229,16 @@ impl AppContainer {
         Arc::new(UserController::new(user_service, user_presenter))
     }
 
+    /// Just setup tracing and be done with it
     #[Singleton]
-    fn logger(&self) -> Arc<dyn Logger> {
-        Arc::new(ConsoleLogger)
+    fn _tracing(&self) -> () {
+        let subscriber = FmtSubscriber::builder()
+            .with_max_level(Level::INFO)
+            .finish();
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("Failed to set tracing subscriber");
+
+        ()
     }
 
     #[Singleton]
@@ -245,15 +248,11 @@ impl AppContainer {
 
     fn web_framework(
         &self,
+        _tracing: (),
         user_controller: &Arc<UserController<impl UserRepository, impl UserPresenter>>,
-        logger: &Arc<dyn Logger>,
         request_count: &Arc<Mutex<u32>>,
     ) -> WebFramework<impl UserRepository, impl UserPresenter> {
-        WebFramework::new(
-            user_controller.clone(),
-            logger.clone(),
-            request_count.clone(),
-        )
+        WebFramework::new(user_controller.clone(), request_count.clone())
     }
 }
 
@@ -267,7 +266,7 @@ async fn main() {
         "{}",
         web_framework
             .handle_request(
-                "create",
+                Action::Create,
                 &[
                     "Alice".to_string(),
                     "alice@example.com".to_string(),
@@ -279,14 +278,14 @@ async fn main() {
     println!(
         "{}",
         web_framework
-            .handle_request("get", &["1".to_string()])
+            .handle_request(Action::Get, &["1".to_string()])
             .await
     );
     println!(
         "{}",
         web_framework
             .handle_request(
-                "create",
+                Action::Create,
                 &[
                     "Bob".to_string(),
                     "bob@example.com".to_string(),

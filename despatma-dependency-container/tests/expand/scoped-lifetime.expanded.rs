@@ -30,11 +30,11 @@ impl<'a> DependencyContainer<'a> {
         }
     }
     pub fn config(&'a self) -> &Config {
-        self.config.get_or_init(|| Config { port: 8080 })
+        self.config.get_or_init(|| { Config { port: 8080 } })
     }
     pub fn service(&'a self) -> Service {
-        let config = self.config.get_or_init(|| Config { port: 8080 });
-        Service::new(config.port)
+        let config = self.config.get_or_init(|| { Config { port: 8080 } });
+        { Service::new(config.port) }
     }
 }
 fn main() {

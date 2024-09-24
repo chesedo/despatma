@@ -32,15 +32,15 @@ impl<'a> DependencyContainer<'a> {
         }
     }
     pub fn config(&'a self) -> Config {
-        Config { port: 8080 }
+        { Config { port: 8080 } }
     }
     pub fn dal(&'a self) -> impl DAL {
-        PostgresDAL
+        { PostgresDAL }
     }
     pub fn service(&'a self) -> Service<impl DAL> {
-        let config = Config { port: 8080 };
-        let dal = PostgresDAL;
-        Service::new(config.port, dal)
+        let config = { Config { port: 8080 } };
+        let dal = { PostgresDAL };
+        { Service::new(config.port, dal) }
     }
 }
 fn main() {

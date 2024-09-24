@@ -24,7 +24,7 @@ impl<'a> DependencyContainer<'a> {
     }
     /// Creates a new instance of the service.
     pub fn service(&'a self) -> Service {
-        Service::new()
+        { Service::new() }
     }
 }
 fn main() {

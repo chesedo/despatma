@@ -357,14 +357,11 @@ impl Dependency {
             })
             .collect();
 
-        let stmts = &block.stmts;
-        let block = quote! { #(#stmts);* };
-
         // Figure out the correct final statement
         let final_stmt = if *is_managed {
             if create_asyncness.is_some() {
                 quote! {
-                    self.#ident.get_or_init(async { #block }).await
+                    self.#ident.get_or_init(async #block ).await
                 }
             } else {
                 quote! {
