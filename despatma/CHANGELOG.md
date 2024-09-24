@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4](https://github.com/chesedo/despatma/compare/despatma-v0.3.3...despatma-v0.3.4) - 2024-09-24
+
+### Added
+
+- *(di)* nested impl traits ([#31](https://github.com/chesedo/despatma/pull/31))
+
+### Other
+
+- example for using dependency_container ([#27](https://github.com/chesedo/despatma/pull/27))
+- dev experience ([#24](https://github.com/chesedo/despatma/pull/24))
+
 ## [0.3.3](https://github.com/chesedo/despatma/compare/despatma-v0.3.2...despatma-v0.3.3) - 2024-09-18
 
 ### Added
