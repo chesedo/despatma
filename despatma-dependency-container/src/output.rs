@@ -369,8 +369,9 @@ impl Dependency {
                 }
             }
         } else {
+            let stmts = &block.stmts;
             quote! {
-                #block
+                #(#stmts)*
             }
         };
 

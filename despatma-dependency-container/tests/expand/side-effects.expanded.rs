@@ -30,7 +30,7 @@ impl<'a> DependencyContainer<'a> {
         }
     }
     pub fn config(&'a self) -> Config {
-        { Config { port: 8080 } }
+        Config { port: 8080 }
     }
     pub fn _tracing(&'a self) -> &() {
         self._tracing
@@ -48,8 +48,8 @@ impl<'a> DependencyContainer<'a> {
                     ::std::io::_print(format_args!("Tracing enabled\n"));
                 };
             });
-        let config = { Config { port: 8080 } };
-        { Service::new(config.port) }
+        let config = Config { port: 8080 };
+        Service::new(config.port)
     }
 }
 fn main() {

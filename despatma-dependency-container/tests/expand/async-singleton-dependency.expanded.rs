@@ -47,7 +47,7 @@ impl<'a> DependencyContainer<'a> {
                 Config { port: 8080 }
             })
             .await;
-        { Service::new(config.port) }
+        Service::new(config.port)
     }
 }
 fn main() {
