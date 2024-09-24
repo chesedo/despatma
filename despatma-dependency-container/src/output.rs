@@ -111,7 +111,7 @@ fn get_struct_fields(
                             quote! { std::cell::OnceCell<#field_ty> }
                         }
                     }
-                    Lifetime::Transient => {
+                    Lifetime::Transient(_) => {
                         unreachable!("we filtered for only singleton and scoped dependencies")
                     }
                 };
@@ -170,7 +170,7 @@ fn get_new_scope_constructors(
                 let init = match dep_ref.lifetime {
                     Lifetime::Singleton(_) => quote! { self.#ident.clone() },
                     Lifetime::Scoped(_) => quote! { Default::default() },
-                    Lifetime::Transient => {
+                    Lifetime::Transient(_) => {
                         unreachable!("we filtered for only singleton and scoped dependencies")
                     }
                 };
@@ -411,7 +411,7 @@ mod tests {
             has_explicit_lifetime: false,
             lifetime: Lifetime::Singleton(Span::call_site()),
             ty: parse_quote! { Config },
-            field_ty: Some(parse_quote! { Config }),
+            field_ty: parse_quote! { Config },
             dependencies: vec![],
         }));
         let db = Rc::new(RefCell::new(processing::Dependency {
@@ -425,7 +425,7 @@ mod tests {
             has_explicit_lifetime: false,
             lifetime: Lifetime::Singleton(Span::call_site()),
             ty: parse_quote! { Sqlite },
-            field_ty: Some(parse_quote! { Sqlite }),
+            field_ty: parse_quote! { Sqlite },
             dependencies: vec![processing::ChildDependency {
                 inner: config.clone(),
                 ty: parse_quote!(&Config),
@@ -446,9 +446,9 @@ mod tests {
                     is_async: true,
                     is_boxed: false,
                     has_explicit_lifetime: false,
-                    lifetime: Lifetime::Transient,
+                    lifetime: Lifetime::Transient(None),
                     ty: parse_quote! { Service },
-                    field_ty: None,
+                    field_ty: parse_quote! { Service },
                     dependencies: vec![processing::ChildDependency {
                         inner: db,
                         ty: parse_quote!(&Sqlite),
@@ -534,7 +534,7 @@ mod tests {
             has_explicit_lifetime: false,
             lifetime: Lifetime::Scoped(Span::call_site()),
             ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
-            field_ty: Some(parse_quote! { std::boxed::Box<dyn DB + 'a> }),
+            field_ty: parse_quote! { std::boxed::Box<dyn DB + 'a> },
             dependencies: vec![],
         };
         let dependency: Dependency = dependency.into();

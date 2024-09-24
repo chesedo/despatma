@@ -59,19 +59,18 @@ impl<R: UserRepository> UserService<R> {
 }
 
 // Interface Adapters Layer
-#[auto_impl(&)]
 trait UserPresenter: Send + Sync {
     fn present_user(&self, user: &User) -> String;
     fn present_error(&self, error: &str) -> String;
 }
 
-struct UserController<'a, R, P> {
-    user_service: &'a UserService<R>,
+struct UserController<R, P> {
+    user_service: UserService<R>,
     presenter: P,
 }
 
-impl<'a, R: UserRepository, P: UserPresenter> UserController<'a, R, P> {
-    fn new(user_service: &'a UserService<R>, presenter: P) -> Self {
+impl<R: UserRepository, P: UserPresenter> UserController<R, P> {
+    fn new(user_service: UserService<R>, presenter: P) -> Self {
         Self {
             user_service,
             presenter,
@@ -149,15 +148,15 @@ impl Logger for ConsoleLogger {
     }
 }
 
-struct WebFramework<'a, R, P> {
-    user_controller: Arc<UserController<'a, R, P>>,
+struct WebFramework<R, P> {
+    user_controller: Arc<UserController<R, P>>,
     logger: Arc<dyn Logger>,
     request_count: Arc<Mutex<u32>>,
 }
 
-impl<'a, R: UserRepository, P: UserPresenter> WebFramework<'a, R, P> {
+impl<R: UserRepository, P: UserPresenter> WebFramework<R, P> {
     fn new(
-        user_controller: Arc<UserController<'a, R, P>>,
+        user_controller: Arc<UserController<R, P>>,
         logger: Arc<dyn Logger>,
         request_count: Arc<Mutex<u32>>,
     ) -> Self {
@@ -213,7 +212,6 @@ impl AppContainer {
         InMemoryUserRepository::new()
     }
 
-    #[Singleton]
     fn user_service(
         &self,
         user_repository: impl UserRepository,
@@ -221,7 +219,7 @@ impl AppContainer {
         UserService::new(user_repository)
     }
 
-    #[Singleton(ConsoleUserPresenter)]
+    #[Transient(ConsoleUserPresenter)]
     fn user_presenter(&self) -> impl UserPresenter {
         ConsoleUserPresenter
     }
@@ -229,9 +227,9 @@ impl AppContainer {
     #[Singleton]
     fn user_controller(
         &self,
-        user_service: &UserService<impl UserRepository>,
+        user_service: UserService<impl UserRepository>,
         user_presenter: impl UserPresenter,
-    ) -> Arc<UserController<'a, impl UserRepository, impl UserPresenter>> {
+    ) -> Arc<UserController<impl UserRepository, impl UserPresenter>> {
         Arc::new(UserController::new(user_service, user_presenter))
     }
 
@@ -258,118 +256,6 @@ impl AppContainer {
         )
     }
 }
-// struct AppContainer<'a> {
-//     user_repository: std::sync::Arc<async_once_cell::OnceCell<InMemoryUserRepository>>,
-//     user_service: std::rc::Rc<std::cell::OnceCell<UserService<&'a InMemoryUserRepository>>>,
-//     user_presenter: std::rc::Rc<std::cell::OnceCell<ConsoleUserPresenter>>,
-//     user_controller: std::rc::Rc<
-//         std::cell::OnceCell<
-//             Arc<UserController<'a, &'a InMemoryUserRepository, &'a ConsoleUserPresenter>>,
-//         >,
-//     >,
-//     logger: std::rc::Rc<std::cell::OnceCell<Arc<dyn Logger>>>,
-//     request_count: std::rc::Rc<std::cell::OnceCell<Arc<Mutex<u32>>>>,
-//     _phantom: PhantomData<&'a ()>,
-// }
-// impl<'a> AppContainer<'a> {
-//     pub fn new() -> Self {
-//         Self {
-//             user_repository: Default::default(),
-//             user_service: Default::default(),
-//             user_presenter: Default::default(),
-//             user_controller: Default::default(),
-//             logger: Default::default(),
-//             request_count: Default::default(),
-//             _phantom: Default::default(),
-//         }
-//     }
-//     pub fn new_scope(&self) -> Self {
-//         Self {
-//             user_repository: self.user_repository.clone(),
-//             user_service: self.user_service.clone(),
-//             user_presenter: self.user_presenter.clone(),
-//             user_controller: self.user_controller.clone(),
-//             logger: self.logger.clone(),
-//             request_count: self.request_count.clone(),
-//             _phantom: Default::default(),
-//         }
-//     }
-//     pub async fn user_repository(&self) -> &impl UserRepository {
-//         self.user_repository
-//             .get_or_init(async { InMemoryUserRepository::new() })
-//             .await
-//     }
-//     pub async fn user_service(&'a self) -> &'_ UserService<impl UserRepository + '_> {
-//         let user_repository = {
-//             self.user_repository
-//                 .get_or_init(async { InMemoryUserRepository::new() })
-//                 .await
-//         };
-
-//         self.user_service
-//             .get_or_init(|| UserService::new(user_repository))
-//     }
-//     pub fn user_presenter(&self) -> &impl UserPresenter {
-//         self.user_presenter.get_or_init(|| ConsoleUserPresenter)
-//     }
-//     pub async fn user_controller(
-//         &'a self,
-//     ) -> &Arc<UserController<impl UserRepository + 'a, impl UserPresenter + 'a>> {
-//         let user_service = {
-//             let user_repository = {
-//                 self.user_repository
-//                     .get_or_init(async { InMemoryUserRepository::new() })
-//                     .await
-//             };
-
-//             self.user_service
-//                 .get_or_init(|| UserService::new(user_repository))
-//         };
-//         let user_presenter = { self.user_presenter.get_or_init(|| ConsoleUserPresenter) };
-
-//         self.user_controller
-//             .get_or_init(|| Arc::new(UserController::new(user_service, user_presenter)))
-//     }
-//     pub fn logger(&self) -> &Arc<dyn Logger> {
-//         self.logger.get_or_init(|| Arc::new(ConsoleLogger))
-//     }
-//     pub fn request_count(&self) -> &Arc<Mutex<u32>> {
-//         self.request_count.get_or_init(|| Arc::new(Mutex::new(0)))
-//     }
-//     pub async fn web_framework(
-//         &'a self,
-//     ) -> WebFramework<impl UserRepository + 'a, impl UserPresenter + 'a> {
-//         let user_controller = {
-
-//         let user_service = {
-//             let user_repository = {
-//                 self.user_repository
-//                     .get_or_init(async { InMemoryUserRepository::new() })
-//                     .await
-//             };
-
-//             self.user_service
-//                 .get_or_init(|| UserService::new(user_repository))
-//         };
-//         let user_presenter = { self.user_presenter.get_or_init(|| ConsoleUserPresenter) };
-
-//         self.user_controller
-//             .get_or_init(|| Arc::new(UserController::new(user_service, user_presenter)))
-//         };
-//         let logger = {
-//             self.logger.get_or_init(|| Arc::new(ConsoleLogger))
-//         };
-//         let request_count = {
-//             self.request_count.get_or_init(|| Arc::new(Mutex::new(0)))
-//         };
-
-//         WebFramework::new(
-//             user_controller.clone(),
-//             logger.clone(),
-//             request_count.clone(),
-//         )
-//     }
-// }
 
 #[tokio::main]
 async fn main() {

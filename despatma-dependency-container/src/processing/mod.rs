@@ -32,7 +32,7 @@ pub struct Dependency {
     pub(crate) has_explicit_lifetime: bool,
     pub(crate) lifetime: Lifetime,
     pub(crate) ty: Type,
-    pub(crate) field_ty: Option<Type>,
+    pub(crate) field_ty: Type,
     pub(crate) dependencies: Vec<ChildDependency>,
 }
 
@@ -46,7 +46,7 @@ pub struct ChildDependency {
 #[derive(Clone)]
 #[cfg_attr(test, derive(Debug))]
 pub enum Lifetime {
-    Transient,
+    Transient(Option<Span>),
     Scoped(Span),
     Singleton(Span),
 }
@@ -55,7 +55,8 @@ impl PartialEq for Lifetime {
     fn eq(&self, other: &Self) -> bool {
         matches!(
             (self, other),
-            (Self::Transient, Self::Transient)
+            (Self::Transient(Some(_)), Self::Transient(Some(_)))
+                | (Self::Transient(None), Self::Transient(None))
                 | (Self::Scoped(_), Self::Scoped(_))
                 | (Self::Singleton(_), Self::Singleton(_))
         )
@@ -115,9 +116,9 @@ impl From<ImplItemFn> for Dependency {
             is_async: false,
             is_boxed: false,
             has_explicit_lifetime: false,
-            lifetime: Lifetime::Transient,
+            lifetime: Lifetime::Transient(None),
+            field_ty: ty.clone(),
             ty,
-            field_ty: None,
             dependencies: vec![],
         }
     }

@@ -15,7 +15,7 @@ impl VisitorMut for WrapBoxType {
             let ty = &dependency.ty;
 
             if dependency.has_explicit_lifetime {
-                dependency.field_ty = Some(parse_quote!(std::boxed::Box<#ty + 'a>));
+                dependency.field_ty = parse_quote!(std::boxed::Box<#ty + 'a>);
                 dependency.ty = parse_quote!(std::boxed::Box<#ty + 'a>);
             } else {
                 dependency.ty = parse_quote!(std::boxed::Box<#ty>);
@@ -73,17 +73,23 @@ mod tests {
         assert_eq!(container.dependencies[0].borrow().ty, parse_quote!(dyn DAL));
         assert_eq!(
             container.dependencies[0].borrow().field_ty,
-            Some(parse_quote!(dyn DAL))
+            parse_quote!(Box<dyn DAL>)
         );
         assert!(!container.dependencies[1].borrow().has_explicit_lifetime);
         assert_eq!(container.dependencies[1].borrow().ty, parse_quote!(Utc));
-        assert_eq!(container.dependencies[1].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[1].borrow().field_ty,
+            parse_quote!(Box<Utc>)
+        );
         assert!(!container.dependencies[2].borrow().has_explicit_lifetime);
         assert_eq!(
             container.dependencies[2].borrow().ty,
             parse_quote!(Service<impl DAL>),
         );
-        assert_eq!(container.dependencies[2].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[2].borrow().field_ty,
+            parse_quote!(Service<impl DAL>),
+        );
 
         container.apply_mut(&mut WrapBoxType);
 
@@ -93,17 +99,23 @@ mod tests {
         );
         assert_eq!(
             container.dependencies[0].borrow().field_ty,
-            Some(parse_quote!(std::boxed::Box<dyn DAL + 'a>))
+            parse_quote!(std::boxed::Box<dyn DAL + 'a>)
         );
         assert_eq!(
             container.dependencies[1].borrow().ty,
             parse_quote!(std::boxed::Box<Utc>),
         );
-        assert_eq!(container.dependencies[1].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[1].borrow().field_ty,
+            parse_quote!(Box<Utc>)
+        );
         assert_eq!(
             container.dependencies[2].borrow().ty,
             parse_quote!(Service<impl DAL>),
         );
-        assert_eq!(container.dependencies[2].borrow().field_ty, None);
+        assert_eq!(
+            container.dependencies[2].borrow().field_ty,
+            parse_quote!(Service<impl DAL>)
+        );
     }
 }
