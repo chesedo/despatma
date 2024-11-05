@@ -146,6 +146,7 @@ mod tests {
             container.dependencies[3].borrow().ty,
             parse_quote!(Presenter<impl Config + use<'a>>),
         );
+        #[rustfmt::skip]
         assert_eq!(
             container.dependencies[4].borrow().ty,
             parse_quote!(
