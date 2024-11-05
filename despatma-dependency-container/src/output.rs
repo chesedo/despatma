@@ -93,22 +93,13 @@ fn get_struct_fields(
                 let field_ty = &dep_ref.field_ty;
 
                 let wrapper_ty = match &dep_ref.lifetime {
-                    Lifetime::Singleton(_) => {
+                    Lifetime::Singleton(_) | Lifetime::Scoped(_) => {
                         if dep_ref.sig.asyncness.is_some() {
                             let once_cell_path: Path = parse_str(ASYNC_ONCE_CELL_PATH)
                                 .expect("ASYNC_ONCE_CELL_PATH to be a path");
                             quote! { std::sync::Arc<#once_cell_path<#field_ty>> }
                         } else {
                             quote! { std::rc::Rc<std::cell::OnceCell<#field_ty>> }
-                        }
-                    }
-                    Lifetime::Scoped(_) => {
-                        if dep_ref.sig.asyncness.is_some() {
-                            let once_cell_path: Path = parse_str(ASYNC_ONCE_CELL_PATH)
-                                .expect("ASYNC_ONCE_CELL_PATH to be a path");
-                            quote! { #once_cell_path<#field_ty> }
-                        } else {
-                            quote! { std::cell::OnceCell<#field_ty> }
                         }
                     }
                     Lifetime::Transient(_) => {

@@ -13,7 +13,7 @@ impl Service {
     }
 }
 struct DependencyContainer<'a> {
-    config: std::cell::OnceCell<Config>,
+    config: std::rc::Rc<std::cell::OnceCell<Config>>,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 impl<'a> DependencyContainer<'a> {
