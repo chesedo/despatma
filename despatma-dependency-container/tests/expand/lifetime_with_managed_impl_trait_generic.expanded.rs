@@ -54,7 +54,7 @@ impl<'a> DependencyContainer<'a> {
     pub fn dal(&'a self) -> &impl DAL {
         self.dal.get_or_init(|| { PostgresDAL })
     }
-    pub fn service(&'a self) -> &Service<impl DAL + use<'_>> {
+    pub fn service(&'a self) -> &Service<impl DAL + use<'a>> {
         let dal = self.dal.get_or_init(|| { PostgresDAL });
         self.service.get_or_init(|| { Service::new(dal) })
     }

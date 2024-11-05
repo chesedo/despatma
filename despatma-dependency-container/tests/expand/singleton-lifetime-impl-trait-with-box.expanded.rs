@@ -23,7 +23,7 @@ impl<D: DAL> Service<D> {
             ::std::io::_print(
                 format_args!(
                     "Box dyn Trait singleton lifetime service started on port {0}\n",
-                    port,
+                    port
                 ),
             );
         };
@@ -66,7 +66,7 @@ impl<'a> DependencyContainer<'a> {
                 if true { Box::new(PostgresDAL) } else { Box::new(SQLiteDAL) }
             })
     }
-    pub fn service(&'a self) -> Service<impl DAL + 'a> {
+    pub fn service(&'a self) -> Service<impl DAL + use<'a>> {
         let config = Config { port: 8080 };
         let dal = self
             .dal
