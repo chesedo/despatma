@@ -13,6 +13,15 @@ impl Task {
 struct Dependencies<'a> {
     _phantom: std::marker::PhantomData<&'a ()>,
 }
+#[automatically_derived]
+impl<'a> ::core::clone::Clone for Dependencies<'a> {
+    #[inline]
+    fn clone(&self) -> Dependencies<'a> {
+        Dependencies {
+            _phantom: ::core::clone::Clone::clone(&self._phantom),
+        }
+    }
+}
 impl<'a> Dependencies<'a> {
     pub fn new() -> Self {
         Self {

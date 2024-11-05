@@ -34,6 +34,16 @@ struct DependencyContainer<'a> {
     dal: std::rc::Rc<std::cell::OnceCell<Box<dyn DAL>>>,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
+#[automatically_derived]
+impl<'a> ::core::clone::Clone for DependencyContainer<'a> {
+    #[inline]
+    fn clone(&self) -> DependencyContainer<'a> {
+        DependencyContainer {
+            dal: ::core::clone::Clone::clone(&self.dal),
+            _phantom: ::core::clone::Clone::clone(&self._phantom),
+        }
+    }
+}
 impl<'a> DependencyContainer<'a> {
     pub fn new() -> Self {
         Self {

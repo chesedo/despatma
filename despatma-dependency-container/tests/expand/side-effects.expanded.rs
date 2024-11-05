@@ -16,6 +16,16 @@ struct DependencyContainer<'a> {
     _tracing: std::rc::Rc<std::cell::OnceCell<()>>,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
+#[automatically_derived]
+impl<'a> ::core::clone::Clone for DependencyContainer<'a> {
+    #[inline]
+    fn clone(&self) -> DependencyContainer<'a> {
+        DependencyContainer {
+            _tracing: ::core::clone::Clone::clone(&self._tracing),
+            _phantom: ::core::clone::Clone::clone(&self._phantom),
+        }
+    }
+}
 impl<'a> DependencyContainer<'a> {
     pub fn new() -> Self {
         Self {

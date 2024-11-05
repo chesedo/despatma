@@ -250,6 +250,7 @@ impl ToTokens for Container {
 
         tokens.extend(quote! {
             #(#attrs)*
+            #[derive(core::clone::Clone)]
             struct #self_ty <'a> {
                 #fields
                 _phantom: std::marker::PhantomData<&'a ()>,

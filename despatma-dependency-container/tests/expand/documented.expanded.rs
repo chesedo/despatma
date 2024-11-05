@@ -11,6 +11,15 @@ impl Service {
 struct DependencyContainer<'a> {
     _phantom: std::marker::PhantomData<&'a ()>,
 }
+#[automatically_derived]
+impl<'a> ::core::clone::Clone for DependencyContainer<'a> {
+    #[inline]
+    fn clone(&self) -> DependencyContainer<'a> {
+        DependencyContainer {
+            _phantom: ::core::clone::Clone::clone(&self._phantom),
+        }
+    }
+}
 impl<'a> DependencyContainer<'a> {
     pub fn new() -> Self {
         Self {
