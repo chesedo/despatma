@@ -13,8 +13,18 @@ impl Service {
     }
 }
 struct DependencyContainer<'a> {
-    config: std::cell::OnceCell<Config>,
+    config: std::rc::Rc<std::cell::OnceCell<Config>>,
     _phantom: std::marker::PhantomData<&'a ()>,
+}
+#[automatically_derived]
+impl<'a> ::core::clone::Clone for DependencyContainer<'a> {
+    #[inline]
+    fn clone(&self) -> DependencyContainer<'a> {
+        DependencyContainer {
+            config: ::core::clone::Clone::clone(&self.config),
+            _phantom: ::core::clone::Clone::clone(&self._phantom),
+        }
+    }
 }
 impl<'a> DependencyContainer<'a> {
     pub fn new() -> Self {
