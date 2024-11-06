@@ -12,7 +12,7 @@ keywords = ["macro", "design", "patterns", "abstract", "factory"]
 proc-macro = true
 
 [dependencies]
-despatma-lib = { version = "0.3.4", path = "../despatma-lib" }
+despatma-lib = { version = "0.3.5", path = "../despatma-lib" }
 proc-macro2.workspace = true
 quote.workspace = true
 syn = { workspace = true, features = ["full"] }
