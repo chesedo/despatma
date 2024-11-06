@@ -51,7 +51,7 @@ struct Adder {
 impl VisitMut for Adder {
     fn visit_type_impl_trait_mut(&mut self, type_impl_trait: &mut TypeImplTrait) {
         if self.to_add.contains(&type_impl_trait.bounds) {
-            type_impl_trait.bounds.push(parse_quote!('a));
+            type_impl_trait.bounds.push(parse_quote!(use<'a>));
         } else {
             // Continue checking for any impl types on inner generics
             visit_type_impl_trait_mut(self, type_impl_trait);
@@ -144,11 +144,14 @@ mod tests {
         assert_eq!(container.dependencies[2].borrow().ty, parse_quote!(Utc));
         assert_eq!(
             container.dependencies[3].borrow().ty,
-            parse_quote!(Presenter<impl Config + 'a>),
+            parse_quote!(Presenter<impl Config + use<'a>>),
         );
+        #[rustfmt::skip]
         assert_eq!(
             container.dependencies[4].borrow().ty,
-            parse_quote!(Service<impl DAL + 'a, impl Config + 'a, Presenter<impl Config + 'a>>),
+            parse_quote!(
+                Service<impl DAL + use<'a>, impl Config + use<'a>, Presenter<impl Config + use<'a>>>
+            ),
         );
     }
 }

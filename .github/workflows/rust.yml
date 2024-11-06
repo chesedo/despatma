@@ -12,23 +12,31 @@ env:
 jobs:
   fmt:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@1.82.0
+      with:
+        components: rustfmt
     - name: Check format
       run: bash scripts.sh cf
+
   clippy:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@1.82.0
+      with:
+        components: clippy
     - name: Clippy
       run: bash scripts.sh cc
+
   test:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@1.82.0
+      with:
+        components: rustfmt
     - uses: cargo-bins/cargo-binstall@main
     - name: Install cargo-expand
       run: cargo binstall -y cargo-expand
