@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5](https://github.com/chesedo/despatma/compare/despatma-dependency-container-v0.3.4...despatma-dependency-container-v0.3.5) - 2024-11-06
+
+### Added
+
+- *(di)* Make containers clonable ([#33](https://github.com/chesedo/despatma/pull/33))
+
+### Other
+
+- *(di)* reduce lifetime uses ([#35](https://github.com/chesedo/despatma/pull/35))
+
 ## [0.3.4](https://github.com/chesedo/despatma/compare/despatma-dependency-container-v0.3.3...despatma-dependency-container-v0.3.4) - 2024-09-24
 
 ### Added

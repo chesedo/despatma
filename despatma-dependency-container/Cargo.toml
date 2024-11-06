@@ -12,7 +12,7 @@ keywords = ["design", "patterns", "dependency", "container", "injection"]
 proc-macro = true
 
 [dependencies]
-despatma-visitor = { version = "0.3.4", path = "../despatma-visitor" }
+despatma-visitor = { version = "0.3.5", path = "../despatma-visitor" }
 proc-macro-error = "1.0.4"
 proc-macro2.workspace = true
 quote.workspace = true
