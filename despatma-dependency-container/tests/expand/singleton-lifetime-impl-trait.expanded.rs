@@ -16,7 +16,7 @@ impl<D: DAL> Service<D> {
         {
             ::std::io::_print(
                 format_args!(
-                    "Impl Trait singleton lifetime service started on port {0}\n", port
+                    "Impl Trait singleton lifetime service started on port {0}\n", port,
                 ),
             );
         };

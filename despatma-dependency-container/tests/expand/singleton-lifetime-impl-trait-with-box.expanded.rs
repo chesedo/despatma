@@ -23,7 +23,7 @@ impl<D: DAL> Service<D> {
             ::std::io::_print(
                 format_args!(
                     "Box dyn Trait singleton lifetime service started on port {0}\n",
-                    port
+                    port,
                 ),
             );
         };

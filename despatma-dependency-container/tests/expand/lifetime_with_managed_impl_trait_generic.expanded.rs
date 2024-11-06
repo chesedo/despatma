@@ -13,7 +13,7 @@ impl<D: DAL> Service<D> {
         {
             ::std::io::_print(
                 format_args!(
-                    "Lifetime service with managed impl trait generic started\n"
+                    "Lifetime service with managed impl trait generic started\n",
                 ),
             );
         };
