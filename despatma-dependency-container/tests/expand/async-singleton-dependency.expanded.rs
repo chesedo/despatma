@@ -65,7 +65,11 @@ fn main() {
         let container = DependencyContainer::new();
         let _service = container.service().await;
     };
-    #[allow(clippy::expect_used, clippy::diverging_sub_expression)]
+    #[allow(
+        clippy::expect_used,
+        clippy::diverging_sub_expression,
+        clippy::needless_return
+    )]
     {
         return tokio::runtime::Builder::new_multi_thread()
             .enable_all()
