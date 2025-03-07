@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6](https://github.com/chesedo/despatma/compare/despatma-dependency-container-v0.3.5...despatma-dependency-container-v0.3.6) - 2025-03-07
+
+### Other
+
+- dependencies updates ([#36](https://github.com/chesedo/despatma/pull/36))
+
 ## [0.3.5](https://github.com/chesedo/despatma/compare/despatma-dependency-container-v0.3.4...despatma-dependency-container-v0.3.5) - 2024-11-06
 
 ### Added

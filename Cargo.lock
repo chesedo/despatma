@@ -66,7 +66,7 @@ dependencies = [
 
 [[package]]
 name = "despatma"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "async-once-cell",
  "auto_impl",
@@ -81,7 +81,7 @@ dependencies = [
 
 [[package]]
 name = "despatma-abstract-factory"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "despatma-lib",
  "despatma-test-helpers",
@@ -96,7 +96,7 @@ dependencies = [
 
 [[package]]
 name = "despatma-dependency-container"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "async-once-cell",
  "auto_impl",
@@ -114,7 +114,7 @@ dependencies = [
 
 [[package]]
 name = "despatma-lib"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "despatma-test-helpers",
  "pretty_assertions",
@@ -126,14 +126,14 @@ dependencies = [
 
 [[package]]
 name = "despatma-test-helpers"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "pretty_assertions",
 ]
 
 [[package]]
 name = "despatma-visitor"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "convert_case",
  "despatma-lib",
