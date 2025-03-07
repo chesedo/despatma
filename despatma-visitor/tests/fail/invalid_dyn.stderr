@@ -4,13 +4,13 @@ error[E0404]: expected trait, found struct `Rectangle`
 7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
   |                          ^^^^^^^^^ not a trait
 
-error[E0782]: trait objects must include the `dyn` keyword
+error[E0782]: expected a type, found a trait
  --> tests/fail/invalid_dyn.rs:7:54
   |
 7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
   |                                                      ^^^^
   |
-help: add `dyn` keyword before this trait
+help: you can add the `dyn` keyword if you want a trait object
   |
 7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, dyn Cube);
   |                                                      +++
