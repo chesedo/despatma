@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use proc_macro_error::emit_error;
+use proc_macro_error2::emit_error;
 use strsim::levenshtein;
 use syn::{FnArg, Ident, Pat};
 
