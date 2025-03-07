@@ -13,7 +13,7 @@ proc-macro = true
 
 [dependencies]
 despatma-visitor = { version = "0.3.5", path = "../despatma-visitor" }
-proc-macro-error = "1.0.4"
+proc-macro-error2 = "2.0.0"
 proc-macro2.workspace = true
 quote.workspace = true
 strsim = "0.11.1"
