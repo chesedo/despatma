@@ -136,11 +136,16 @@
             )}
             printf "  \033[1;37m%-''${col_width}s\033[0m - %s\n" "nix flake check" "Run all checks"
             echo ""
+
+            echo -e "\n\033[1;33m• Checking for any outdated packages...\033[0m\n"
+            cargo outdated --root-deps-only
           '';
 
           # Extra inputs can be added here; cargo and rustc are provided by default.
-          packages = [
+          packages = with pkgs; [
             fenix.packages.${system}.rust-analyzer
+            cargo-watch
+            cargo-outdated
           ] ++ lib.attrValues checkScripts;
         };
       });
