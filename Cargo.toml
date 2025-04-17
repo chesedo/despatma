@@ -3,12 +3,12 @@ version = "0.3.6"
 
 [workspace]
 members = [
-    "despatma",
-    "despatma-abstract-factory",
-    "despatma-dependency-container",
-    "despatma-lib",
-    "despatma-test-helpers",
-    "despatma-visitor"
+  "despatma",
+  "despatma-abstract-factory",
+  "despatma-dependency-container",
+  "despatma-lib",
+  "despatma-test-helpers",
+  "despatma-visitor",
 ]
 resolver = "2"
 

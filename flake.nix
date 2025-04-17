@@ -94,6 +94,11 @@
             inherit src;
             description = "Check code formatting";
           };
+
+          toml-fmt = craneLib.taploFmt {
+            src = pkgs.lib.sources.sourceFilesBySuffices src [ ".toml" ];
+            description = "Check toml formatting";
+          };
         };
 
         packages = {
