@@ -12,7 +12,7 @@ keywords = ["macro", "design", "patterns", "visitor"]
 proc-macro = true
 
 [dependencies]
-convert_case = "0.8.0"
+convert_case = "0.9.0"
 despatma-lib = { version = "0.3.6", path = "../despatma-lib" }
 proc-macro2.workspace = true
 quote.workspace = true
