@@ -10,11 +10,32 @@ error[E0782]: expected a type, found a trait
 7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
   |                                                      ^^^^
   |
+help: use a new generic type parameter, constrained by `Cube`
+  |
+7 - visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
+7 + visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, T, T: Cube);
+  |
+help: you can also use an opaque type, but users won't be able to specify the type parameter when calling the `fn`, having to rely exclusively on type inference
+  |
+7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, impl Cube);
+  |                                                      ++++
+help: alternatively, use a trait object to accept any type that implements `Cube`, accessing its methods at runtime using dynamic dispatch
+  |
+7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, dyn Cube);
+  |                                                      +++
+
+error[E0782]: expected a type, found a trait
+ --> tests/fail/invalid_dyn.rs:7:54
+  |
+7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
+  |                                                      ^^^^
+  |
 help: you can add the `dyn` keyword if you want a trait object
   |
 7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, dyn Cube);
   |                                                      +++
 help: alternatively use a blanket implementation to implement `visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube)` for all types that also implement `Cube`
   |
-7 | visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, T)<T: Cube>;
-  |                                                      ~ +++++++++
+7 - visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, Cube);
+7 + visitor!(dyn Circle, dyn Rectangle, dyn Sphere, Arc, T)<T: Cube>;
+  |

@@ -55,7 +55,8 @@ fn main() {
     #[allow(
         clippy::expect_used,
         clippy::diverging_sub_expression,
-        clippy::needless_return
+        clippy::needless_return,
+        clippy::unwrap_in_result
     )]
     {
         return tokio::runtime::Builder::new_multi_thread()
