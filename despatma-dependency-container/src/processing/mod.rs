@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use proc_macro2::Span;
-use syn::{parse_quote, Attribute, Block, ImplItemFn, ReturnType, Signature, Type};
+use syn::{parse_quote, Attribute, Block, ImplItemFn, ReturnType, Signature, Type, Visibility};
 
 use crate::input;
 
@@ -15,6 +15,7 @@ mod visitor;
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {
+    pub(crate) vis: Visibility,
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) self_ty: Type,
     pub(crate) dependencies: Vec<Rc<RefCell<Dependency>>>,
@@ -72,6 +73,7 @@ impl Lifetime {
 impl From<input::Container> for Container {
     fn from(input: input::Container) -> Self {
         let input::Container {
+            vis,
             attrs,
             self_ty,
             dependencies,
@@ -85,6 +87,7 @@ impl From<input::Container> for Container {
             .collect();
 
         Self {
+            vis,
             attrs,
             self_ty,
             dependencies,
