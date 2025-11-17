@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7](https://github.com/chesedo/despatma/compare/despatma-v0.3.6...despatma-v0.3.7) - 2025-11-17
+
+### Other
+
+- Allow changing the visibility of the generated dependency container ([#42](https://github.com/chesedo/despatma/pull/42))
+- Switch to flakes ([#38](https://github.com/chesedo/despatma/pull/38))
+
 ## [0.3.4](https://github.com/chesedo/despatma/compare/despatma-v0.3.3...despatma-v0.3.4) - 2024-09-24
 
 ### Added
