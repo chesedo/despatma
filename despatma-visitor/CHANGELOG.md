@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7](https://github.com/chesedo/despatma/compare/despatma-visitor-v0.3.6...despatma-visitor-v0.3.7) - 2025-11-17
+
+### Other
+
+- Update dev environment to cargo v1.89.0 and update dependencies ([#41](https://github.com/chesedo/despatma/pull/41))
+
 ## [0.3.6](https://github.com/chesedo/despatma/compare/despatma-visitor-v0.3.5...despatma-visitor-v0.3.6) - 2025-03-07
 
 ### Other
