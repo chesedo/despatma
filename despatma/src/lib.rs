@@ -715,6 +715,19 @@ pub use despatma_visitor::visitor_mut;
 ///
 /// **Important**: The linking between dependencies works because the `config()` method has the same name as the `config` argument in the `service` method. This name matching is crucial for the auto-wiring to function correctly.
 ///
+/// ## Container Visibility
+///
+/// By default, the generated container struct is private. To make it public, add a visibility modifier to the macro invocation:
+///
+/// ```
+/// use despatma::dependency_container;
+///
+/// #[dependency_container(pub)]
+/// impl MyContainer { }
+/// ```
+///
+/// The macro supports all Rust [visibility modifiers](https://doc.rust-lang.org/reference/visibility-and-privacy.html) including `pub`, `pub(crate)`, `pub(super)`, and `pub(in path)`.
+///
 /// ## Advanced Features
 ///
 /// ### Returning Traits

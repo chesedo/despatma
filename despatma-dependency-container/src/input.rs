@@ -1,8 +1,9 @@
 use proc_macro_error2::emit_error;
-use syn::{Attribute, ImplItem, ImplItemFn, ItemImpl, Type};
+use syn::{Attribute, ImplItem, ImplItemFn, ItemImpl, Type, Visibility};
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {
+    pub(crate) vis: Visibility,
     pub(crate) attrs: Vec<Attribute>,
     pub(crate) self_ty: Type,
     pub(crate) dependencies: Vec<ImplItemFn>,
@@ -23,10 +24,15 @@ impl Container {
             .collect();
 
         Self {
+            vis: Visibility::Inherited,
             attrs: item_impl.attrs,
             self_ty: item_impl.self_ty.as_ref().clone(),
             dependencies,
         }
+    }
+
+    pub fn set_visibility(&mut self, vis: Visibility) {
+        self.vis = vis;
     }
 }
 
@@ -78,6 +84,7 @@ mod tests {
             }
         ));
         let expected = Container {
+            vis: Visibility::Inherited,
             attrs: vec![],
             self_ty: parse_quote!(DependencyContainer),
             dependencies: vec![

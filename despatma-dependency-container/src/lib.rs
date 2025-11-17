@@ -11,9 +11,13 @@ mod processing;
 
 #[proc_macro_error]
 #[proc_macro_attribute]
-pub fn dependency_container(_tokens: TokenStream, impl_expr: TokenStream) -> TokenStream {
+pub fn dependency_container(tokens: TokenStream, impl_expr: TokenStream) -> TokenStream {
     let input = parse_macro_input!(impl_expr as ItemImpl);
-    let input = input::Container::from_item_impl(input);
+    let mut input = input::Container::from_item_impl(input);
+
+    let visibility = parse_macro_input!(tokens as syn::Visibility);
+    input.set_visibility(visibility);
+
     let mut processing: processing::Container = input.into();
     processing.process();
     let output: output::Container = processing.into();

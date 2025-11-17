@@ -7,7 +7,7 @@ use syn::{
     punctuated::Punctuated,
     token::{Async, Fn, Paren},
     Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident, Path, Signature, Stmt, Token,
-    Type,
+    Type, Visibility,
 };
 
 use crate::processing::{self, Lifetime};
@@ -20,6 +20,7 @@ const ASYNC_ONCE_CELL_PATH: &str = "despatma::async_once_cell::OnceCell";
 
 #[cfg_attr(test, derive(Eq, PartialEq, Debug))]
 pub struct Container {
+    vis: Visibility,
     attrs: Vec<Attribute>,
     self_ty: Type,
     fields: Punctuated<Field, Token![,]>,
@@ -46,6 +47,7 @@ pub struct Dependency {
 impl From<processing::Container> for Container {
     fn from(container: processing::Container) -> Self {
         let processing::Container {
+            vis,
             attrs,
             self_ty,
             dependencies,
@@ -69,6 +71,7 @@ impl From<processing::Container> for Container {
             .collect();
 
         Self {
+            vis,
             attrs,
             self_ty,
             fields,
@@ -240,6 +243,7 @@ impl From<processing::Dependency> for Dependency {
 impl ToTokens for Container {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
+            vis,
             attrs,
             self_ty,
             fields,
@@ -251,7 +255,7 @@ impl ToTokens for Container {
         tokens.extend(quote! {
             #(#attrs)*
             #[derive(core::clone::Clone)]
-            struct #self_ty <'a> {
+            #vis struct #self_ty <'a> {
                 #fields
                 _phantom: std::marker::PhantomData<&'a ()>,
             }
@@ -419,6 +423,7 @@ mod tests {
             }],
         }));
         let container = processing::Container {
+            vis: syn::Visibility::Inherited,
             attrs: vec![],
             self_ty: parse_quote! { Container },
             dependencies: vec![
@@ -480,6 +485,7 @@ mod tests {
             dependencies: vec![config.clone()],
         };
         let expected = super::Container {
+            vis: Visibility::Inherited,
             attrs: vec![],
             self_ty: parse_quote! { Container },
             fields,
