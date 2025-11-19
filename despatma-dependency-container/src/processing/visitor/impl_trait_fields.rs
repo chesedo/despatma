@@ -69,6 +69,12 @@ impl ErrorVisitorMut for ImplTraitFields {
                         example = "#[Transient(TransientType)]"
                     );
                 }
+                Lifetime::Embedded(span) => {
+                    emit_error!(
+                        ty, "Only explicit specification of a concrete type is available";
+                        hint = span => "Add a type to the new function";
+                    )
+                }
             }
         }
     }
@@ -76,10 +82,7 @@ impl ErrorVisitorMut for ImplTraitFields {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
-    use proc_macro2::Span;
-    use syn::parse_quote;
-
+    use super::*;
     use crate::{
         input,
         processing::{
@@ -87,8 +90,9 @@ mod tests {
             visitor::{ExtractLifetime, VisitableMut},
         },
     };
-
-    use super::*;
+    use pretty_assertions::assert_eq;
+    use proc_macro2::Span;
+    use syn::parse_quote;
 
     #[test]
     fn impl_trait_fields() {
