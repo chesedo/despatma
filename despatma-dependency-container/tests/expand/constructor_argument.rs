@@ -24,9 +24,7 @@ impl Service {
 
 #[despatma_dependency_container::dependency_container]
 impl DependencyContainer {
-    fn new(config: Config) -> Self {
-        Self
-    }
+    fn new(config: Config) {}
 
     #[Singleton]
     fn repository(&self, config: &Config) -> Repository {
