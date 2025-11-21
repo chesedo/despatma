@@ -1,14 +1,18 @@
 use std::{cell::RefCell, rc::Rc};
 
-use proc_macro2::Span;
-use syn::{parse_quote, Attribute, Block, ImplItemFn, ReturnType, Signature, Type, Visibility};
-
 use crate::input;
+use proc_macro2::Span;
+use syn::spanned::Spanned;
+use syn::{
+    parse_quote, Attribute, Block, ImplItemFn, Pat, PatType, ReturnType, Signature, Type,
+    Visibility,
+};
 
 use self::visitor::{
-    AddWildcardLifetime, ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractLifetime,
-    ImplTraitButRegisteredConcrete, ImplTraitFields, LinkDependencies, OwningManagedDependency,
-    ReplaceImplGenericsWithConcrete, UnsupportedRegisteredTypes, VisitableMut, WrapBoxType,
+    AddWildcardLifetime, ErrorVisitorMut, ExtractAsync, ExtractBoxType, ExtractEmbeddedDependency,
+    ExtractLifetime, ImplTraitButRegisteredConcrete, ImplTraitFields, LinkDependencies,
+    OwningManagedDependency, ReplaceImplGenericsWithConcrete, UnsupportedRegisteredTypes,
+    VisitableMut, WrapBoxType,
 };
 
 mod visitor;
@@ -48,6 +52,16 @@ pub enum Lifetime {
     Transient(Option<Span>),
     Scoped(Span),
     Singleton(Span),
+    Embedded(Span),
+}
+
+impl Lifetime {
+    pub(crate) fn is_embedded(&self) -> bool {
+        match self {
+            Lifetime::Embedded(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl PartialEq for Lifetime {
@@ -66,7 +80,10 @@ impl Eq for Lifetime {}
 
 impl Lifetime {
     pub fn is_managed(&self) -> bool {
-        matches!(self, Lifetime::Singleton(_) | Lifetime::Scoped(_))
+        matches!(
+            self,
+            Lifetime::Singleton(_) | Lifetime::Scoped(_) | Lifetime::Embedded(_)
+        )
     }
 }
 
@@ -79,7 +96,7 @@ impl From<input::Container> for Container {
             dependencies,
         } = input;
 
-        let dependencies = dependencies
+        let dependencies: Vec<Rc<RefCell<Dependency>>> = dependencies
             .into_iter()
             .map(Dependency::from)
             .map(RefCell::from)
@@ -124,9 +141,32 @@ impl From<ImplItemFn> for Dependency {
     }
 }
 
+impl From<&PatType> for Dependency {
+    fn from(pat_type: &PatType) -> Self {
+        let Pat::Ident(ident) = pat_type.pat.as_ref() else {
+            unreachable!()
+        };
+
+        let ty = pat_type.ty.as_ref();
+
+        Self {
+            attrs: vec![],
+            sig: parse_quote! { fn #ident(&self) -> #ty },
+            block: parse_quote!({}),
+            is_async: false,
+            is_boxed: false,
+            lifetime: Lifetime::Embedded(ty.span()),
+            field_ty: ty.clone(),
+            ty: ty.clone(),
+            dependencies: vec![],
+        }
+    }
+}
+
 impl Container {
     pub fn process(&mut self) {
         self.process_visitor::<ExtractLifetime>();
+        self.process_visitor::<ExtractEmbeddedDependency>();
         self.process_visitor::<LinkDependencies>();
 
         // Needs field types (lifetimes) to be extracted and dependencies to be linked first
