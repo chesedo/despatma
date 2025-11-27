@@ -25,29 +25,24 @@ impl VisitorMut for ExtractEmbeddedDependency {
             return;
         };
 
-        container.dependencies = container
-            .dependencies
-            .iter()
-            .cloned()
-            .chain(
-                new_fn
-                    .inputs
-                    .iter()
-                    .filter_map(|arg| match arg {
-                        FnArg::Typed(pat_type) => {
-                            let Pat::Ident(_) = pat_type.pat.as_ref() else {
-                                return None;
-                            };
+        container.dependencies.extend(
+            new_fn
+                .inputs
+                .iter()
+                .filter_map(|arg| match arg {
+                    FnArg::Typed(pat_type) => {
+                        let Pat::Ident(_) = pat_type.pat.as_ref() else {
+                            return None;
+                        };
 
-                            Some(pat_type)
-                        }
-                        _ => None,
-                    })
-                    .map(Dependency::from)
-                    .map(RefCell::new)
-                    .map(Rc::new),
-            )
-            .collect();
+                        Some(pat_type)
+                    }
+                    _ => None,
+                })
+                .map(Dependency::from)
+                .map(RefCell::new)
+                .map(Rc::new),
+        );
     }
 }
 
