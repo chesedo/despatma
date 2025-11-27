@@ -55,15 +55,6 @@ pub enum Lifetime {
     Embedded(Span),
 }
 
-impl Lifetime {
-    pub(crate) fn is_embedded(&self) -> bool {
-        match self {
-            Lifetime::Embedded(_) => true,
-            _ => false,
-        }
-    }
-}
-
 impl PartialEq for Lifetime {
     fn eq(&self, other: &Self) -> bool {
         matches!(
@@ -84,6 +75,10 @@ impl Lifetime {
             self,
             Lifetime::Singleton(_) | Lifetime::Scoped(_) | Lifetime::Embedded(_)
         )
+    }
+
+    pub fn is_embedded(&self) -> bool {
+        matches!(self, Lifetime::Embedded(_))
     }
 }
 
