@@ -38,7 +38,7 @@ impl<'a> ConfigContainer<'a> {
     }
 }
 struct ServiceContainer<'a> {
-    config_container: std::sync::Arc<ConfigContainer<'static>>,
+    config_container: std::sync::Arc<ConfigContainer<'a>>,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 #[automatically_derived]
@@ -52,7 +52,7 @@ impl<'a> ::core::clone::Clone for ServiceContainer<'a> {
     }
 }
 impl<'a> ServiceContainer<'a> {
-    pub fn new(config_container: ConfigContainer<'static>) -> Self {
+    pub fn new(config_container: ConfigContainer<'a>) -> Self {
         Self {
             config_container: std::sync::Arc::new(config_container),
             _phantom: Default::default(),
@@ -68,7 +68,7 @@ impl<'a> ServiceContainer<'a> {
         let config_container = self.config_container.as_ref();
         Service::new(config_container.config().port)
     }
-    pub fn config_container(&'a self) -> &ConfigContainer<'static> {
+    pub fn config_container(&'a self) -> &ConfigContainer<'a> {
         self.config_container.as_ref()
     }
 }

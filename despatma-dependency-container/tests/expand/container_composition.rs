@@ -20,7 +20,7 @@ impl ConfigContainer {
 
 #[despatma_dependency_container::dependency_container]
 impl ServiceContainer {
-    fn new(config_container: ConfigContainer<'static>) {}
+    fn new<'a>(config_container: ConfigContainer<'a>) {}
 
     fn service(&self, config_container: &ConfigContainer) -> Service {
         Service::new(config_container.config().port)
