@@ -1,0 +1,14 @@
+error: Only explicit specification of a concrete type is available
+
+         = help: Add a type to the new function
+
+  --> tests/fail/constructor_argument_impl_trait.rs:16:17
+   |
+16 |     fn new(dal: impl DAL) {}
+   |                 ^^^^^^^^
+
+error[E0433]: failed to resolve: use of undeclared type `DependencyContainer`
+  --> tests/fail/constructor_argument_impl_trait.rs:25:21
+   |
+25 |     let container = DependencyContainer::new(dal);
+   |                     ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DependencyContainer`
