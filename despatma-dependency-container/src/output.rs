@@ -1,16 +1,16 @@
 use std::{cell::RefCell, rc::Rc};
 
+use crate::processing::{self, Lifetime};
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
+use syn::token::Comma;
 use syn::{
     parse_quote, parse_str,
     punctuated::Punctuated,
     token::{Async, Fn, Paren},
-    Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident, Path, Signature, Stmt, Token,
-    Type, Visibility,
+    Attribute, Block, Field, FieldValue, FieldsNamed, FnArg, Ident, PatType, Path, Signature, Stmt,
+    Token, Type, Visibility,
 };
-
-use crate::processing::{self, Lifetime};
 
 #[cfg(any(test, feature = "standalone"))]
 const ASYNC_ONCE_CELL_PATH: &str = "async_once_cell::OnceCell";
@@ -23,6 +23,7 @@ pub struct Container {
     vis: Visibility,
     attrs: Vec<Attribute>,
     self_ty: Type,
+    constructor_arguments: Punctuated<FnArg, Comma>,
     fields: Punctuated<Field, Token![,]>,
     constructors: Punctuated<FieldValue, Token![,]>,
     scope_constructors: Punctuated<FieldValue, Token![,]>,
@@ -41,6 +42,7 @@ pub struct Dependency {
     ty: Type,
     create_asyncness: Option<Async>,
     is_managed: bool,
+    is_embedded: bool,
     dependencies: Vec<Dependency>,
 }
 
@@ -65,6 +67,8 @@ impl From<processing::Container> for Container {
 
         let scope_constructors = get_new_scope_constructors(&managed_dependencies);
 
+        let constructor_arguments = get_constructor_arguments(&managed_dependencies);
+
         let dependencies = dependencies
             .into_iter()
             .map(|d| d.borrow().clone().into())
@@ -74,12 +78,38 @@ impl From<processing::Container> for Container {
             vis,
             attrs,
             self_ty,
+            constructor_arguments,
             fields,
             constructors,
             scope_constructors,
             dependencies,
         }
     }
+}
+
+fn get_constructor_arguments(
+    managed_dependencies: &[Rc<RefCell<processing::Dependency>>],
+) -> Punctuated<FnArg, Token![,]> {
+    let embedded_dependencies: Vec<_> = managed_dependencies
+        .iter()
+        .filter(|d| d.borrow().lifetime.is_embedded())
+        .map(|d| {
+            let dep_ref = d.borrow();
+            let ident = &dep_ref.sig.ident;
+            let field_ty = &dep_ref.field_ty;
+
+            let pt: PatType = parse_quote! {
+                #ident: #field_ty
+            };
+            pt
+        })
+        .collect();
+
+    if embedded_dependencies.is_empty() {
+        return Default::default();
+    }
+
+    parse_quote!(#(#embedded_dependencies,)*)
 }
 
 fn get_struct_fields(
@@ -105,8 +135,11 @@ fn get_struct_fields(
                             quote! { std::rc::Rc<std::cell::OnceCell<#field_ty>> }
                         }
                     }
+                    Lifetime::Embedded(_) => quote! { std::sync::Arc<#field_ty> },
                     Lifetime::Transient(_) => {
-                        unreachable!("we filtered for only singleton and scoped dependencies")
+                        unreachable!(
+                            "we filtered for only singleton, scoped and embedded dependencies"
+                        )
                     }
                 };
 
@@ -140,8 +173,16 @@ fn get_struct_field_constructors(
                 let dep_ref = dep.borrow();
                 let ident = &dep_ref.sig.ident;
 
-                parse_quote! {
-                    #ident: Default::default()
+                match dep_ref.lifetime {
+                    Lifetime::Singleton(_) | Lifetime::Scoped(_) => parse_quote! {
+                        #ident: Default::default()
+                    },
+                    Lifetime::Embedded(_) => parse_quote! {
+                        #ident: std::sync::Arc::new(#ident)
+                    },
+                    Lifetime::Transient(_) => unreachable!(
+                        "we filtered for only singleton, scoped and embedded dependencies"
+                    ),
                 }
             })
             .collect();
@@ -162,10 +203,14 @@ fn get_new_scope_constructors(
                 let dep_ref = dep.borrow();
                 let ident = &dep_ref.sig.ident;
                 let init = match dep_ref.lifetime {
-                    Lifetime::Singleton(_) => quote! { self.#ident.clone() },
+                    Lifetime::Singleton(_) | Lifetime::Embedded(_) => {
+                        quote! { self.#ident.clone() }
+                    }
                     Lifetime::Scoped(_) => quote! { Default::default() },
                     Lifetime::Transient(_) => {
-                        unreachable!("we filtered for only singleton and scoped dependencies")
+                        unreachable!(
+                            "we filtered for only singleton, scoped and embedded dependencies"
+                        )
                     }
                 };
 
@@ -216,7 +261,7 @@ impl From<processing::Dependency> for Dependency {
         };
 
         let is_managed = lifetime.is_managed();
-
+        let is_embedded = lifetime.is_embedded();
         let ty = if is_managed { parse_quote!(&#ty) } else { ty };
 
         let dependencies = dependencies
@@ -235,6 +280,7 @@ impl From<processing::Dependency> for Dependency {
             inputs,
             ty,
             is_managed,
+            is_embedded,
             dependencies,
         }
     }
@@ -246,6 +292,7 @@ impl ToTokens for Container {
             vis,
             attrs,
             self_ty,
+            constructor_arguments,
             fields,
             constructors,
             scope_constructors,
@@ -261,7 +308,7 @@ impl ToTokens for Container {
             }
 
             impl <'a> #self_ty <'a> {
-                pub fn new() -> Self {
+                pub fn new(#constructor_arguments) -> Self {
                     Self {
                         #constructors
                         _phantom: Default::default(),
@@ -294,6 +341,7 @@ impl ToTokens for Dependency {
             ty,
             create_asyncness: _,
             is_managed: _,
+            is_embedded: _,
             dependencies: _,
         } = self;
 
@@ -328,6 +376,7 @@ impl Dependency {
             ty: _,
             create_asyncness,
             is_managed,
+            is_embedded,
             dependencies,
         } = self;
 
@@ -354,7 +403,7 @@ impl Dependency {
             .collect();
 
         // Figure out the correct final statement
-        let final_stmt = if *is_managed {
+        let final_stmt = if *is_managed && !is_embedded {
             if create_asyncness.is_some() {
                 quote! {
                     self.#ident.get_or_init(async #block ).await
@@ -363,6 +412,10 @@ impl Dependency {
                 quote! {
                     self.#ident.get_or_init(|| #block)
                 }
+            }
+        } else if *is_embedded {
+            quote! {
+                self.#ident.as_ref()
             }
         } else {
             let stmts = &block.stmts;
@@ -393,6 +446,18 @@ mod tests {
 
     #[test]
     fn from_processing_container() {
+        let embedded = Rc::new(RefCell::new(processing::Dependency {
+            attrs: vec![],
+            sig: parse_quote!(fn embedded(&self) -> Embedded),
+            block: parse_quote!({}),
+            is_async: false,
+            is_boxed: false,
+            lifetime: Lifetime::Embedded(Span::call_site()),
+            ty: parse_quote! { Embedded },
+            field_ty: parse_quote! { Embedded },
+            dependencies: vec![],
+        }));
+
         let config = Rc::new(RefCell::new(processing::Dependency {
             attrs: vec![],
             sig: parse_quote! {
@@ -409,18 +474,24 @@ mod tests {
         let db = Rc::new(RefCell::new(processing::Dependency {
             attrs: vec![],
             sig: parse_quote! {
-                fn db(&self, config: &Config) -> Sqlite
+                fn db(&self, config: &Config, embedded: &Embedded) -> Sqlite
             },
-            block: parse_quote!({ Sqlite::new(config.conn_str) }),
+            block: parse_quote!({ Sqlite::new(config.conn_str, embedded.some_val) }),
             is_async: true,
             is_boxed: false,
             lifetime: Lifetime::Singleton(Span::call_site()),
             ty: parse_quote! { Sqlite },
             field_ty: parse_quote! { Sqlite },
-            dependencies: vec![processing::ChildDependency {
-                inner: config.clone(),
-                ty: parse_quote!(&Config),
-            }],
+            dependencies: vec![
+                processing::ChildDependency {
+                    inner: config.clone(),
+                    ty: parse_quote!(&Config),
+                },
+                processing::ChildDependency {
+                    inner: embedded.clone(),
+                    ty: parse_quote!(&Embedded),
+                },
+            ],
         }));
         let container = processing::Container {
             vis: syn::Visibility::Inherited,
@@ -445,6 +516,7 @@ mod tests {
                         ty: parse_quote!(&Sqlite),
                     }],
                 })),
+                embedded,
             ],
         };
         let container: super::Container = container.into();
@@ -454,6 +526,7 @@ mod tests {
                 {
                     config: std::sync::Arc<async_once_cell::OnceCell<Config>>,
                     db: std::rc::Rc<std::cell::OnceCell<Sqlite>>,
+                    embedded: std::sync::Arc<Embedded>,
                 }
             };
             named.named
@@ -469,28 +542,45 @@ mod tests {
             ty: parse_quote!(&Config),
             create_asyncness: Some(parse_quote!(async)),
             is_managed: true,
+            is_embedded: false,
             dependencies: vec![],
+        };
+        let embedded = Dependency {
+            attrs: vec![],
+            block: parse_quote!({}),
+            asyncness: None,
+            fn_token: parse_quote!(fn),
+            ident: parse_quote!(embedded),
+            paren_token: Default::default(),
+            ty: parse_quote! { &Embedded },
+            create_asyncness: None,
+            dependencies: vec![],
+            inputs: parse_quote!(&self),
+            is_managed: true,
+            is_embedded: true,
         };
         let db = Dependency {
             attrs: vec![],
-            block: parse_quote!({ Sqlite::new(config.conn_str) }),
+            block: parse_quote!({ Sqlite::new(config.conn_str, embedded.some_val) }),
             asyncness: Some(parse_quote!(async)),
             fn_token: parse_quote!(fn),
             ident: parse_quote!(db),
             paren_token: Default::default(),
-            inputs: parse_quote!(&self, config: &Config),
+            inputs: parse_quote!(&self, config: &Config, embedded: &Embedded),
             ty: parse_quote!(&Sqlite),
             create_asyncness: None,
             is_managed: true,
-            dependencies: vec![config.clone()],
+            is_embedded: false,
+            dependencies: vec![config.clone(), embedded.clone()],
         };
         let expected = super::Container {
             vis: Visibility::Inherited,
             attrs: vec![],
             self_ty: parse_quote! { Container },
+            constructor_arguments: parse_quote!(embedded: Embedded,),
             fields,
-            constructors: parse_quote!( config: Default::default(), db: Default::default(), ),
-            scope_constructors: parse_quote!( config: self.config.clone(), db: self.db.clone(), ),
+            constructors: parse_quote!( config: Default::default(), db: Default::default(), embedded: std::sync::Arc::new(embedded), ),
+            scope_constructors: parse_quote!( config: self.config.clone(), db: self.db.clone(), embedded: self.embedded.clone(), ),
             dependencies: vec![
                 config,
                 db.clone(),
@@ -505,8 +595,10 @@ mod tests {
                     ty: parse_quote!(Service),
                     create_asyncness: None,
                     is_managed: false,
+                    is_embedded: false,
                     dependencies: vec![db],
                 },
+                embedded,
             ],
         };
 
@@ -541,6 +633,7 @@ mod tests {
             ty: parse_quote!(&std::boxed::Box<dyn DB + 'a>),
             create_asyncness: None,
             is_managed: true,
+            is_embedded: false,
             dependencies: vec![],
         };
 
