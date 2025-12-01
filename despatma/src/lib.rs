@@ -1036,11 +1036,9 @@ pub use despatma_visitor::visitor_mut;
 ///     }
 /// }
 ///
-/// fn main() {
-///     let config = Config { port: 8080 };
-///     let container = DependencyContainer::new(config);
-///     let _service = container.service();
-/// }
+/// let config = Config { port: 8080 };
+/// let container = DependencyContainer::new(config);
+/// let _service = container.service();
 /// ```
 ///
 /// ## Considerations
