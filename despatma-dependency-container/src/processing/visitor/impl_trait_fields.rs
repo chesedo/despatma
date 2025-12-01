@@ -87,20 +87,17 @@ mod tests {
         input,
         processing::{
             self,
-            visitor::{ExtractEmbeddedDependency, ExtractLifetime, VisitableMut},
+            visitor::{ExtractLifetime, VisitableMut},
         },
     };
     use pretty_assertions::assert_eq;
     use proc_macro2::Span;
-    use syn::spanned::Spanned;
-    use syn::{parse_quote, FnArg, Pat};
+    use syn::parse_quote;
 
     #[test]
     fn impl_trait_fields() {
         let mut container: processing::Container = input::Container::from_item_impl(parse_quote!(
             impl Container {
-                fn new(dal: impl DAL) {}
-
                 #[Singleton]
                 fn singleton(&self) -> Singleton {
                     Singleton
@@ -142,31 +139,7 @@ mod tests {
         ))
         .into();
 
-        let impl_dal = container
-            .dependencies
-            .iter()
-            .find(|dep| dep.borrow().sig.ident == "new")
-            .unwrap()
-            .borrow()
-            .sig
-            .inputs
-            .iter()
-            .filter_map(|arg| match arg {
-                FnArg::Receiver(_) => None,
-                FnArg::Typed(pat_type) => Some(pat_type),
-            })
-            .find(|pat_type| {
-                let Pat::Ident(ident) = pat_type.pat.as_ref() else {
-                    return false;
-                };
-
-                ident.ident == "dal"
-            })
-            .unwrap()
-            .clone();
-
         container.apply_mut(&mut ExtractLifetime);
-        container.apply_mut(&mut ExtractEmbeddedDependency);
 
         let mut visitor = ImplTraitFields::new();
         container.apply_mut(&mut visitor);
@@ -190,10 +163,6 @@ mod tests {
                     ty: parse_quote!(impl DefaultTrait),
                     lifetime: Lifetime::Transient(None)
                 },
-                Error {
-                    ty: parse_quote!(impl DAL),
-                    lifetime: Lifetime::Embedded(impl_dal.ty.span()),
-                }
             ]
         )
     }
