@@ -13,7 +13,7 @@ proc-macro = true
 
 [dependencies]
 convert_case = "0.9.0"
-despatma-lib = { version = "0.3.7", path = "../despatma-lib" }
+despatma-lib = { version = "0.3.8", path = "../despatma-lib" }
 proc-macro2.workspace = true
 quote.workspace = true
 syn.workspace = true

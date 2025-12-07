@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8](https://github.com/chesedo/despatma/compare/despatma-v0.3.7...despatma-v0.3.8) - 2025-12-07
+
+### Added
+
+- *(di)* Added the ability to add dependencies when creating a container ([#43](https://github.com/chesedo/despatma/pull/43))
+
 ## [0.3.7](https://github.com/chesedo/despatma/compare/despatma-v0.3.6...despatma-v0.3.7) - 2025-11-17
 
 ### Other
