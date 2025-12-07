@@ -71,8 +71,8 @@ impl ErrorVisitorMut for ImplTraitFields {
                 }
                 Lifetime::Embedded(span) => {
                     emit_error!(
-                        ty, "Only explicit specification of a concrete type is available";
-                        hint = span => "Add a type to the new function";
+                        ty, "Only concrete types supported";
+                        hint = span => "Change this `impl` type to a concrete type";
                     )
                 }
             }

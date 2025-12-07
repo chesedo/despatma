@@ -1,6 +1,6 @@
-error: Only explicit specification of a concrete type is available
+error: Only concrete types supported
 
-         = help: Add a type to the new function
+         = help: Change this `impl` type to a concrete type
 
   --> tests/fail/constructor_argument_impl_trait.rs:16:17
    |
