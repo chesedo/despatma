@@ -137,7 +137,7 @@ mod tests {
         );
         assert_eq!(
             container.dependencies[3].borrow().field_ty,
-            parse_quote!(Default)
+            parse_quote!(Default),
         );
         assert_eq!(container.dependencies[4].borrow().attrs.len(), 1);
         assert_eq!(

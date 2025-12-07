@@ -1005,6 +1005,42 @@ pub use despatma_visitor::visitor_mut;
 ///    too. We need this since we are still only giving a reference to `service` when it requests the `DataLayer`
 ///    dependency. However, `service` no longer needs to know it is getting a reference like the previous example.
 ///
+/// ### Constructor arguments
+///
+/// In some cases, you may need to initialize dependencies outside the container. In such cases, you can define a static `new` method with arguments listing dependencies of this type.
+///
+/// **Important**: The argument names must match those in the location where these dependencies are used.
+///
+/// ```
+/// use despatma::dependency_container;
+///
+/// struct Config {
+///     port: u32,
+/// }
+///
+/// struct Service;
+///
+/// impl Service {
+///     fn new(port: u32) -> Self {
+///         println!("Service started on port {}", port);
+///         Self
+///     }
+/// }
+///
+/// #[dependency_container]
+/// impl DependencyContainer {
+///     fn new(config: Config) {}
+///
+///     fn service(&self, config: &Config) -> Service {
+///         Service::new(config.port)
+///     }
+/// }
+///
+/// let config = Config { port: 8080 };
+/// let container = DependencyContainer::new(config);
+/// let _service = container.service();
+/// ```
+///
 /// ## Considerations
 ///
 /// - The macro determines wiring based on method names matching argument names.

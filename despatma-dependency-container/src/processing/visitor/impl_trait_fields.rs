@@ -7,7 +7,7 @@ use super::{ErrorVisitorMut, VisitorMut};
 
 /// Creates errors for any final fields which might be of type impl Trait.
 ///
-/// Needs to be called after extracting lifetimes
+/// Needs to be called after extracting lifetimes and embedded dependencies
 pub struct ImplTraitFields {
     errors: Vec<Error>,
 }
@@ -69,6 +69,12 @@ impl ErrorVisitorMut for ImplTraitFields {
                         example = "#[Transient(TransientType)]"
                     );
                 }
+                Lifetime::Embedded(span) => {
+                    emit_error!(
+                        ty, "Only concrete types supported";
+                        hint = span => "Change this `impl` type to a concrete type";
+                    )
+                }
             }
         }
     }
@@ -76,10 +82,7 @@ impl ErrorVisitorMut for ImplTraitFields {
 
 #[cfg(test)]
 mod tests {
-    use pretty_assertions::assert_eq;
-    use proc_macro2::Span;
-    use syn::parse_quote;
-
+    use super::*;
     use crate::{
         input,
         processing::{
@@ -87,8 +90,9 @@ mod tests {
             visitor::{ExtractLifetime, VisitableMut},
         },
     };
-
-    use super::*;
+    use pretty_assertions::assert_eq;
+    use proc_macro2::Span;
+    use syn::parse_quote;
 
     #[test]
     fn impl_trait_fields() {
@@ -158,7 +162,7 @@ mod tests {
                 Error {
                     ty: parse_quote!(impl DefaultTrait),
                     lifetime: Lifetime::Transient(None)
-                }
+                },
             ]
         )
     }
